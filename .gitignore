@@ -1,0 +1,12 @@
+/.cache/
+/dist/
+/data/
+/models/
+/packages/
+/images/
+/drivers/
+/runtime/
+/evidence/
+*.exe
+*.gguf
+*.iso
