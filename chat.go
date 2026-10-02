@@ -431,6 +431,14 @@ func compactEvidence(data any) any {
 	trim = func(v any) any {
 		switch x := v.(type) {
 		case map[string]any:
+			// The legacy system.inspect version field is the app version,
+			// not Windows/macOS/Linux's version. Disambiguate model evidence.
+			if _, system := x["cpu_threads"]; system && x["os"] != nil {
+				if appVersion, ok := x["version"]; ok {
+					x["app_version"] = appVersion
+					delete(x, "version")
+				}
+			}
 			for k, value := range x {
 				if k == "portable_root" || k == "api_key" || k == "apiKey" {
 					delete(x, k)
