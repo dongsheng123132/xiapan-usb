@@ -11,7 +11,7 @@ import (
 
 func quietProcess(cmd *exec.Cmd) { cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: 0x08000000} }
 
-func platformInfo(root string) (uint64, []Volume, []string) {
+func platformInfo(root string) (uint64, uint64, []Volume, []string) {
 	kernel := syscall.NewLazyDLL("kernel32.dll")
 	var status struct {
 		Length               uint32
@@ -52,5 +52,5 @@ func platformInfo(root string) (uint64, []Volume, []string) {
 			notes = append(notes, "检测到 NTFS 移动盘；跨平台写入能力需要单独验证，不能由 Windows 测试推断。")
 		}
 	}
-	return status.TotalPhys, volumes, notes
+	return status.TotalPhys, status.AvailPhys, volumes, notes
 }

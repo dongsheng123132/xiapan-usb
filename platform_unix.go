@@ -14,8 +14,8 @@ import (
 
 func quietProcess(cmd *exec.Cmd) {}
 
-func platformInfo(root string) (uint64, []Volume, []string) {
-	var memory uint64
+func platformInfo(root string) (uint64, uint64, []Volume, []string) {
+	var memory, available uint64
 	if runtime.GOOS == "linux" {
 		b, _ := os.ReadFile("/proc/meminfo")
 		for _, line := range strings.Split(string(b), "\n") {
@@ -25,7 +25,13 @@ func platformInfo(root string) (uint64, []Volume, []string) {
 					n, _ := strconv.ParseUint(f[1], 10, 64)
 					memory = n * 1024
 				}
-				break
+			}
+			if strings.HasPrefix(line, "MemAvailable:") {
+				f := strings.Fields(line)
+				if len(f) >= 2 {
+					n, _ := strconv.ParseUint(f[1], 10, 64)
+					available = n * 1024
+				}
 			}
 		}
 	}
@@ -35,5 +41,5 @@ func platformInfo(root string) (uint64, []Volume, []string) {
 		b, _ := exec.CommandContext(ctx, "sysctl", "-n", "hw.memsize").Output()
 		memory, _ = strconv.ParseUint(strings.TrimSpace(string(b)), 10, 64)
 	}
-	return memory, []Volume{}, []string{"此平台已提供体检与便携路径实现，磁盘详细信息和整机运行仍需对应平台实测。"}
+	return memory, available, []Volume{}, []string{"此平台已提供体检与便携路径实现，磁盘详细信息和整机运行仍需对应平台实测。"}
 }

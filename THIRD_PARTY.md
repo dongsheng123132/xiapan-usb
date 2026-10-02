@@ -6,6 +6,7 @@
 | --- | --- | --- |
 | llama.cpp CPU 推理运行时 | [官方 b11146 Windows CPU 包](https://github.com/ggml-org/llama.cpp/releases/tag/b11146) | MIT，全文见 licenses/llama.cpp-MIT.txt |
 | Qwen3.5-0.8B 模型 | [Qwen 原模型](https://huggingface.co/Qwen/Qwen3.5-0.8B)，[ggml-org 量化文件](https://huggingface.co/ggml-org/Qwen3.5-0.8B-GGUF/tree/8fea620) | Apache 2.0，全文见 licenses/Qwen3.5-Apache-2.0.txt |
+| PicoClaw 可选 Agent | [官方 v0.3.1 Windows 包](https://github.com/sipeed/picoclaw/releases/tag/v0.3.1) | MIT，全文见 licenses/PicoClaw-MIT.txt |
 
 试用包使用 Q4_0 GGUF，属于上游模型的量化形式。未修改下载的模型和运行时文件；执行前校验的具体文件与 SHA-256 由 catalog/local-ai.json 记录，并嵌入对应构建。
 

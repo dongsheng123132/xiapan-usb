@@ -23,14 +23,15 @@ import (
 )
 
 type SystemInfo struct {
-	OS           string   `json:"os"`
-	Arch         string   `json:"arch"`
-	CPUThreads   int      `json:"cpu_threads"`
-	MemoryBytes  uint64   `json:"memory_bytes"`
-	PortableRoot string   `json:"portable_root"`
-	Version      string   `json:"version"`
-	Volumes      []Volume `json:"volumes"`
-	Notes        []string `json:"notes"`
+	OS                   string   `json:"os"`
+	Arch                 string   `json:"arch"`
+	CPUThreads           int      `json:"cpu_threads"`
+	MemoryBytes          uint64   `json:"memory_bytes"`
+	AvailableMemoryBytes uint64   `json:"available_memory_bytes,omitempty"`
+	PortableRoot         string   `json:"portable_root"`
+	Version              string   `json:"version"`
+	Volumes              []Volume `json:"volumes"`
+	Notes                []string `json:"notes"`
 }
 
 type Volume struct {
@@ -43,8 +44,8 @@ type Volume struct {
 }
 
 func inspectSystem(root string) (SystemInfo, error) {
-	memory, volumes, notes := platformInfo(root)
-	return SystemInfo{runtime.GOOS, runtime.GOARCH, runtime.NumCPU(), memory, root, version, volumes, notes}, nil
+	memory, available, volumes, notes := platformInfo(root)
+	return SystemInfo{OS: runtime.GOOS, Arch: runtime.GOARCH, CPUThreads: runtime.NumCPU(), MemoryBytes: memory, AvailableMemoryBytes: available, PortableRoot: root, Version: version, Volumes: volumes, Notes: notes}, nil
 }
 
 func inspectNetwork() (any, error) {

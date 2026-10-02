@@ -23,9 +23,9 @@ import (
 	"time"
 )
 
-const version = "0.1.0-preview"
+const version = "0.2.0-preview"
 
-//go:embed web/* skills/*/SKILL.md catalog/local-ai.json
+//go:embed web/* skills/*/SKILL.md catalog/*.json
 var assets embed.FS
 
 type Result struct {
@@ -43,6 +43,22 @@ type Action struct {
 }
 
 var actions = []Action{
+	{"wallet.ensure", "设备钱包", "联网自动取得钱包；失败不阻塞维护工具", true},
+	{"wallet.refresh", "刷新余额", "只读查询当前钱包余额", false},
+	{"wallet.adopt", "填入已有钱包", "验证并使用已有凭证，不搬动余额", true},
+	{"wallet.copy", "备份钱包凭证", "用户主动复制当前钱包凭证", false},
+	{"wallet.rotate", "换一把密钥", "两阶段轮换；需要明确确认", true},
+	{"wallet.reset", "移除本盘钱包", "只清本盘状态，不删除服务端钱包", true},
+	{"wallet.recharge", "一键充值", "打开当前钱包的官方充值页，不付款", false},
+	{"cloud.models", "虾盘云模型", "从服务端读取可用模型", false},
+	{"chat.start", "新对话", "创建本盘维护对话", true},
+	{"chat.list", "对话记录", "读取本盘维护对话", false},
+	{"chat.read", "继续对话", "读取指定维护对话", false},
+	{"chat.progress", "处理进度", "读取当前对话的实际动作结果", false},
+	{"chat.send", "AI 维护对话", "云端或本地对话，调用受控维护动作", true},
+	{"chat.confirm", "确认维护操作", "执行此对话中明确展示的操作", true},
+	{"processes.inspect", "查看进程", "只读获取进程名称与内存，不读取命令行", false},
+	{"network.diagnose", "网络诊断", "检查网卡、DNS 与云端连通性，不改配置", false},
 	{"system.inspect", "电脑体检", "读取系统、内存与磁盘信息", false},
 	{"network.inspect", "网络检查", "读取本机网络接口，不更改网络配置", false},
 	{"resources.scan", "查看盘内资源", "查看软件、模型、镜像和驱动，不执行发现的文件", false},
@@ -59,6 +75,16 @@ func runAction(ctx context.Context, root, id string, input map[string]any) Resul
 	var data any
 	var err error
 	switch id {
+	case "wallet.ensure", "wallet.refresh", "wallet.adopt", "wallet.copy", "wallet.rotate", "wallet.reset", "wallet.recharge":
+		data, err = walletAction(ctx, root, id, input)
+	case "cloud.models":
+		data, err = cloudModels(ctx, root)
+	case "chat.start", "chat.list", "chat.read", "chat.progress", "chat.send", "chat.confirm":
+		data, err = chatAction(ctx, root, id, input)
+	case "processes.inspect":
+		data, err = inspectProcesses(ctx, root)
+	case "network.diagnose":
+		data, err = diagnoseNetwork(ctx)
 	case "system.inspect":
 		data, err = inspectSystem(root)
 	case "network.inspect":
