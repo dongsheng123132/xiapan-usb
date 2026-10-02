@@ -11,6 +11,15 @@ import (
 
 func quietProcess(cmd *exec.Cmd) { cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: 0x08000000} }
 
+func nativeSystemDir() string {
+	var buffer [32768]uint16
+	n, _, _ := syscall.NewLazyDLL("kernel32.dll").NewProc("GetSystemDirectoryW").Call(uintptr(unsafe.Pointer(&buffer[0])), uintptr(len(buffer)))
+	if n == 0 || n >= uintptr(len(buffer)) {
+		return ""
+	}
+	return syscall.UTF16ToString(buffer[:n])
+}
+
 func platformInfo(root string) (uint64, uint64, []Volume, []string) {
 	kernel := syscall.NewLazyDLL("kernel32.dll")
 	var status struct {

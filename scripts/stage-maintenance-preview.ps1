@@ -7,7 +7,7 @@ $volume=Get-Volume -DriveLetter $Drive
 if($disk.BusType -ne 'USB' -or $disk.IsBoot -or $disk.IsSystem -or $disk.FriendlyName -ne 'ORICO EB05-128GB' -or $volume.FileSystem -ne 'exFAT'){throw '目标不是已核验的 ORICO exFAT 测试盘'}
 if($volume.SizeRemaining -lt 1GB){throw '空间不足'}
 $driveRoot="$($Drive):\"
-$target=[IO.Path]::GetFullPath((Join-Path $driveRoot ('虾盘 AI 维护台 0.2-'+[guid]::NewGuid().ToString('N').Substring(0,6))))
+$target=[IO.Path]::GetFullPath((Join-Path $driveRoot ('虾盘 AI 维护台 0.3-'+[guid]::NewGuid().ToString('N').Substring(0,6))))
 if(!$target.StartsWith($driveRoot,[StringComparison]::OrdinalIgnoreCase) -or (Test-Path -LiteralPath $target)){throw '目标目录边界检查失败'}
 $before=@(Get-ChildItem -LiteralPath $driveRoot -Force | Select-Object Name,Length,LastWriteTimeUtc)
 New-Item -ItemType Directory -Path $target | Out-Null

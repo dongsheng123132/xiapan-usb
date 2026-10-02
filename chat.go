@@ -91,7 +91,7 @@ func chatAction(ctx context.Context, root, id string, input map[string]any) (any
 		return nil, nil
 	}
 	if id == "chat.start" {
-		s := ChatSession{ID: uniqueID(), Title: "新的维护任务", Messages: []ChatMessage{}, Pending: []Proposal{}, Engine: "cloud"}
+		s := ChatSession{ID: uniqueID(), Title: "新的维护任务", Messages: []ChatMessage{}, Pending: []Proposal{}, Engine: "pico"}
 		if err := saveChat(root, &s); err != nil {
 			return nil, err
 		}
@@ -153,7 +153,7 @@ func chatAction(ctx context.Context, root, id string, input map[string]any) (any
 			return nil, errors.New("此操作已经完成或不属于当前对话")
 		}
 		p := s.Pending[at]
-		if p.Action != "tools.install" && p.Action != "report.create" {
+		if p.Action != "tools.install" && p.Action != "report.create" && p.Action != "tools.launch" {
 			return nil, errors.New("此操作不能由聊天确认执行")
 		}
 		p.Input["confirmed"] = true
@@ -168,7 +168,11 @@ func chatAction(ctx context.Context, root, id string, input map[string]any) (any
 			}
 		}
 		appendAction(&s, p.Action, r.Data)
-		addMessage(&s, "assistant", "这一步已实际执行并验证，结果保存在本盘。")
+		if p.Action == "tools.launch" {
+			addMessage(&s, "assistant", "系统已接受工具启动请求。后续操作由你在该工具中完成；尚未执行清理或驱动修复。")
+		} else {
+			addMessage(&s, "assistant", "这一步已实际执行并验证，结果保存在本盘。")
+		}
 		if err = saveChat(root, &s); err != nil {
 			return nil, err
 		}
@@ -188,7 +192,7 @@ func chatAction(ctx context.Context, root, id string, input map[string]any) (any
 	addMessage(&s, "user", message)
 	s.Engine = str(input, "engine")
 	if s.Engine == "" {
-		s.Engine = "cloud"
+		s.Engine = "pico"
 	}
 	// Persist the question before IO. A cancelled model call must not lose it.
 	if err = saveChat(root, &s); err != nil {
@@ -226,7 +230,7 @@ func appendAction(s *ChatSession, id string, data any) {
 }
 func propose(s *ChatSession, id string, input map[string]any) {
 	for _, p := range s.Pending {
-		if p.Action == id {
+		if p.Action == id && str(p.Input, "tool_id") == str(input, "tool_id") && str(p.Input, "package_id") == str(input, "package_id") {
 			return
 		}
 	}
@@ -235,6 +239,9 @@ func propose(s *ChatSession, id string, input map[string]any) {
 	text := "保存一份新的本盘体检报告"
 	if id == "tools.install" {
 		text = "安装内置便携体检工具到本盘新目录，校验文件并实际启动验证；不修改宿主软件"
+	}
+	if id == "tools.launch" {
+		text = "打开「" + builtinToolName(str(input, "tool_id")) + "」。只打开系统界面，不自动清理、卸载或安装驱动。"
 	}
 	s.Messages = append(s.Messages, ChatMessage{ID: uniqueID(), Role: "proposal", Text: text, Action: id, ProposalID: p.ID})
 	publishProgress(s)
@@ -249,7 +256,7 @@ func readAction(ctx context.Context, root string, s *ChatSession, id string) err
 }
 func runSlash(ctx context.Context, root string, s *ChatSession, message string) error {
 	cmd := strings.Fields(message)[0]
-	aliases := map[string]string{"/体检": "system.inspect", "/inspect": "system.inspect", "/网络": "network.diagnose", "/network": "network.diagnose", "/资源": "resources.scan", "/resources": "resources.scan", "/进程": "processes.inspect", "/processes": "processes.inspect", "/模型": "models.inspect", "/models": "models.inspect"}
+	aliases := map[string]string{"/体检": "system.inspect", "/inspect": "system.inspect", "/网络": "network.diagnose", "/network": "network.diagnose", "/资源": "resources.scan", "/resources": "resources.scan", "/进程": "processes.inspect", "/processes": "processes.inspect", "/模型": "models.inspect", "/models": "models.inspect", "/驱动": "drivers.inspect", "/drivers": "drivers.inspect", "/工具": "tools.catalog", "/tools": "tools.catalog"}
 	if id := aliases[cmd]; id != "" {
 		return readAction(ctx, root, s, id)
 	}
@@ -261,15 +268,26 @@ func runSlash(ctx context.Context, root string, s *ChatSession, message string) 
 		propose(s, "tools.install", map[string]any{"package_id": "portable-check"})
 		return nil
 	}
+	if cmd == "/打开" || cmd == "/open" {
+		args := strings.Fields(message)
+		if len(args) != 2 {
+			return errors.New("请选择工具集合中的打开按钮")
+		}
+		if err := requireBuiltinTool(args[1]); err != nil {
+			return err
+		}
+		propose(s, "tools.launch", map[string]any{"tool_id": args[1]})
+		return nil
+	}
 	if cmd == "/救援" || cmd == "/rescue" {
 		addMessage(s, "assistant", "如果电脑无法进入系统，需要从独立的 WinPE 或 Linux 救援环境启动。先备份重要数据，再辨认目标磁盘。当前程序不写引导、不重装；资源页可查看已准备的镜像。格式化成 exFAT 本身不会让 U 盘可启动。")
 		return nil
 	}
-	addMessage(s, "assistant", "本盘命令：/体检 /网络 /资源 /进程 /模型 /报告 /安装 /救援。它们调用真实维护动作，可在专业模式查看结果。这里不是任意系统命令终端。")
+	addMessage(s, "assistant", "本盘命令：/体检 /网络 /驱动 /工具 /资源 /进程 /模型 /报告 /安装 /救援。它们调用真实维护动作，可在专业模式查看结果。这里不是任意系统命令终端。")
 	return nil
 }
 
-var chatReadActions = map[string]bool{"system.inspect": true, "network.inspect": true, "network.diagnose": true, "processes.inspect": true, "resources.scan": true, "models.inspect": true, "reports.list": true}
+var chatReadActions = map[string]bool{"system.inspect": true, "network.inspect": true, "network.diagnose": true, "processes.inspect": true, "resources.scan": true, "models.inspect": true, "reports.list": true, "drivers.inspect": true, "tools.catalog": true}
 
 func modelTool(ctx context.Context, root string, s *ChatSession, id string, input map[string]any) any {
 	if chatReadActions[id] {
@@ -285,6 +303,10 @@ func modelTool(ctx context.Context, root string, s *ChatSession, id string, inpu
 	}
 	if id == "tools.install" && str(input, "package_id") == "portable-check" {
 		propose(s, id, map[string]any{"package_id": "portable-check"})
+		return map[string]any{"ok": true, "status": "requires_user_confirmation", "executed": false}
+	}
+	if id == "tools.launch" && requireBuiltinTool(str(input, "tool_id")) == nil {
+		propose(s, id, map[string]any{"tool_id": str(input, "tool_id")})
 		return map[string]any{"ok": true, "status": "requires_user_confirmation", "executed": false}
 	}
 	return map[string]any{"ok": false, "error": "该动作未开放给 AI；未执行"}
@@ -341,12 +363,7 @@ func cloudConversation(ctx context.Context, root string, s *ChatSession, model s
 			messages = append(messages, map[string]any{"role": role, "content": text})
 		}
 	}
-	ids := []string{}
-	for id := range chatReadActions {
-		ids = append(ids, id)
-	}
-	ids = append(ids, "tools.install", "report.create")
-	tools := []any{map[string]any{"type": "function", "function": map[string]any{"name": "maintenance_action", "description": "调用已注册的维护动作。读取自动执行；写入返回待确认。", "parameters": map[string]any{"type": "object", "properties": map[string]any{"action": map[string]any{"type": "string", "enum": ids}, "package_id": map[string]any{"type": "string", "enum": []string{"portable-check"}}}, "required": []string{"action"}, "additionalProperties": false}}}}
+	tools := []any{map[string]any{"type": "function", "function": map[string]any{"name": "maintenance_action", "description": "调用已注册的维护动作。读取自动执行；写入返回待确认。", "parameters": maintenanceToolSchema()}}}
 	for round := 0; round < 4; round++ {
 		var reply struct {
 			Choices []struct {
@@ -363,7 +380,7 @@ func cloudConversation(ctx context.Context, root string, s *ChatSession, model s
 				} `json:"message"`
 			} `json:"choices"`
 		}
-		if err = remoteJSON(ctx, cloudConfig().API, "/v1/chat/completions", "POST", key, map[string]any{"model": model, "messages": messages, "tools": tools, "tool_choice": "auto", "stream": false, "max_tokens": 1200}, &reply); err != nil {
+		if err = remoteJSON(ctx, cloudConfig().API, "/v1/chat/completions", "POST", key, map[string]any{"model": model, "messages": messages, "tools": tools, "tool_choice": "auto", "stream": false, "max_tokens": cloudResponseLimit(model)}, &reply); err != nil {
 			return err
 		}
 		if len(reply.Choices) == 0 {
@@ -395,6 +412,15 @@ func cloudConversation(ctx context.Context, root string, s *ChatSession, model s
 	}
 	addMessage(s, "assistant", "本轮检测已记录。请查看上方结果，确认需要的下一步；继续描述问题可以接着处理。")
 	return nil
+}
+
+func cloudResponseLimit(model string) int {
+	// Reasoning tokens share the completion budget. The project's Flash
+	// channel requires enough room for reasoning before its visible answer.
+	if strings.Contains(strings.ToLower(model), "deepseek") {
+		return 8192
+	}
+	return 1200
 }
 
 func compactEvidence(data any) any {
@@ -431,6 +457,17 @@ func compactEvidence(data any) any {
 }
 
 func localConversation(ctx context.Context, root string, s *ChatSession, message string, input map[string]any) error {
+	if s.Engine == "pico" {
+		if nativeAgent.Chat == nil {
+			return errors.New("此构建没有 PicoClaw，可切换虾盘云直连")
+		}
+		text, err := nativeAgent.Chat(ctx, root, s, message)
+		if err != nil {
+			return err
+		}
+		addMessage(s, "assistant", text)
+		return nil
+	}
 	ids := []string{}
 	if containsAny(message, "电脑", "内存", "磁盘", "慢", "体检") {
 		ids = append(ids, "system.inspect")
@@ -454,17 +491,6 @@ func localConversation(ctx context.Context, root string, s *ChatSession, message
 	}
 	if containsAny(message, "安装") {
 		propose(s, "tools.install", map[string]any{"package_id": "portable-check"})
-	}
-	if s.Engine == "pico" {
-		if nativeAgent.Chat == nil {
-			return errors.New("此构建没有原生 Agent 适配，可使用默认虾盘云")
-		}
-		text, err := nativeAgent.Chat(ctx, root, s, message)
-		if err != nil {
-			return err
-		}
-		addMessage(s, "assistant", text)
-		return nil
 	}
 	if s.Engine == "local" {
 		state, err := inspectModels(ctx, root)

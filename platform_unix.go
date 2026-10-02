@@ -14,6 +14,8 @@ import (
 
 func quietProcess(cmd *exec.Cmd) {}
 
+func nativeSystemDir() string { return "" }
+
 func platformInfo(root string) (uint64, uint64, []Volume, []string) {
 	var memory, available uint64
 	if runtime.GOOS == "linux" {

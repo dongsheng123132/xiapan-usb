@@ -7,7 +7,11 @@ description: 诊断电脑不能上网、DNS、代理、端口或模型服务连�
 
 先明确失败对象：所有网站、某个网站、软件仓库还是模型接口。询问或读取准确错误，不把任何超时直接判成需要代理。
 
-通过宿主已提供的动作读取网卡、地址、路由、DNS、系统时间、代理与目标连接。虾盘预览的 `network.inspect` 只读取网卡和地址，`internet_verified=false`；它不能证明公网、DNS 或代理已经正常。
+通过 PicoClaw 的 `mcp_xiapan_maintenance_action` 或宿主动作核心读取证据。`network.inspect` 只读取网卡和地址，`internet_verified=false`；`network.diagnose` 检查虾盘云 DNS 和 HTTPS；`drivers.inspect` 在 Windows 离线读取网络类设备、硬件 ID、驱动版本、INF 与故障码，并列出盘内 drivers/ 文件。当前没有路由、代理、系统时间检测动作，不得编造读取结果。
+
+未识别且缺驱动的设备也会列出，它不一定是网卡。故障码 0 不证明能上网；文件名相似不证明驱动兼容。按硬件 ID、电脑型号、系统和架构到整机/网卡厂商官网准备驱动，放入 `drivers/<系统-架构>/<厂商-型号>/`，保留来源、许可证和校验值。先尝试有线网络或手机 USB 共享网络，手机连接也可能需要驱动。
+
+`tools.catalog` 给出系统维护工具与官方资源入口的准备状态。`tools.launch` 的 `device-manager` 只申请打开设备管理器：返回 `requires_user_confirmation` 时没有执行；用户在页面确认后只是打开系统界面，不代表已经安装驱动。网络重置、驱动安装、卸载和自动修复尚未实现。
 
 按「网卡与链路 → 地址与路由 → DNS → TLS/系统时间 → 代理 → 目标服务」定位。只运行与当前假设有关的检查，避免不断重试不可达服务。
 

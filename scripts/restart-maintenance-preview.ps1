@@ -4,7 +4,7 @@ $target=Get-Content -LiteralPath (Join-Path $projectRoot 'evidence/preview-targe
 $root=[IO.Path]::GetFullPath($target.root)
 $partition=Get-Partition -DriveLetter E
 $disk=Get-Disk -Number $partition.DiskNumber
-if($disk.FriendlyName -ne 'ORICO EB05-128GB' -or $disk.BusType -ne 'USB' -or $disk.IsBoot -or $disk.IsSystem -or (Get-Volume -DriveLetter E).FileSystem -ne 'exFAT' -or !$root.StartsWith('E:\虾盘 AI 维护台 0.2-',[StringComparison]::OrdinalIgnoreCase)){throw '测试盘与目录核验失败'}
+if($disk.FriendlyName -ne 'ORICO EB05-128GB' -or $disk.BusType -ne 'USB' -or $disk.IsBoot -or $disk.IsSystem -or (Get-Volume -DriveLetter E).FileSystem -ne 'exFAT' -or $root -notmatch '^E:\\虾盘 AI 维护台 0\.[23]-[a-f0-9]{6}$'){throw '测试盘与目录核验失败'}
 & python (Join-Path $PSScriptRoot 'stop-owned-preview.py')
 $serverRecord=Join-Path $projectRoot 'evidence/preview-server.json'
 if(Test-Path -LiteralPath $serverRecord){$old=Get-Content -LiteralPath $serverRecord -Raw|ConvertFrom-Json;for($i=0;$i -lt 30;$i++){if(!(Get-Process -Id $old.pid -ErrorAction SilentlyContinue)){break};Start-Sleep -Milliseconds 100}}
