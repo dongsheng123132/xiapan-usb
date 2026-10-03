@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net"
 	"net/http"
 	"os"
@@ -174,6 +175,10 @@ func launchBundle(exe string) error {
 	root, err := resolveRoot("")
 	if err != nil {
 		return err
+	}
+	// The first read of a USB drive waits for the user's privacy decision.
+	if _, err = os.ReadDir(root); errors.Is(err, fs.ErrPermission) {
+		return errors.New(removableHelp)
 	}
 	reservation, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {

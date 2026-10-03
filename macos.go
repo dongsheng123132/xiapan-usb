@@ -69,6 +69,8 @@ func bundleRoot(dir string) (string, bool) {
 	return dir, false
 }
 
+const removableHelp = "macOS 没有允许虾盘访问这只 U 盘。请打开「系统设置 › 隐私与安全性 › 文件与文件夹」，为「虾盘」打开「可移除宗卷」，然后重新打开虾盘。"
+
 const translocationHelp = "macOS 正在隔离运行虾盘（App Translocation），程序看不到 U 盘里的 app/ 与 data/。请在访达中把「虾盘.app」拖到其他文件夹再拖回原处，然后重新打开；不需要关闭系统安全功能。"
 
 // Older LaunchServices versions may pass a process serial number argument.

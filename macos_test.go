@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -113,5 +114,21 @@ func TestPlatformManifestSelection(t *testing.T) {
 	}
 	if got := hostLabel(SystemInfo{OS: "windows", Arch: "amd64"}); got != "windows/amd64" {
 		t.Fatal(got)
+	}
+}
+
+func TestResourceScanSkipsFinderMetadata(t *testing.T) {
+	root := t.TempDir()
+	dir := filepath.Join(root, "models")
+	os.MkdirAll(dir, 0700)
+	for _, name := range []string{"model.gguf", "._model.gguf", ".DS_Store"} {
+		os.WriteFile(filepath.Join(dir, name), []byte("x"), 0600)
+	}
+	scan, err := scanResources(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(scan.Files) != 1 || scan.Files[0].Name != "model.gguf" {
+		t.Fatalf("metadata listed as resources: %+v", scan.Files)
 	}
 }

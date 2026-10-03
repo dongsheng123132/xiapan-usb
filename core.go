@@ -127,6 +127,10 @@ func scanResources(root string) (ResourceScan, error) {
 			if d.Type()&os.ModeSymlink != 0 {
 				return nil
 			}
+			// macOS keeps metadata beside files on exFAT/FAT drives; it is not a resource.
+			if strings.HasPrefix(d.Name(), "._") || d.Name() == ".DS_Store" {
+				return nil
+			}
 			if d.IsDir() {
 				rel, _ := filepath.Rel(dir, path)
 				if strings.Count(rel, string(os.PathSeparator)) >= 5 {
