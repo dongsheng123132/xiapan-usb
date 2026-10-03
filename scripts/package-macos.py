@@ -97,6 +97,7 @@ for filename in ['LICENSE', 'THIRD_PARTY.md']:
     shutil.copy2(ROOT / filename, target / 'app' / filename)
 (target / 'app/使用说明.txt').write_text(
     '双击「虾盘.app」，浏览器会打开虾盘界面；关掉页面后再次双击即可重新打开。\n'
+    '第一次在这台 Mac 上打开时，系统会询问是否允许虾盘访问可移除宗卷，请点「允许」；设置、对话都保存在这只 U 盘上。\n'
     '用完点击页面右上角「退出」，再推出 U 盘。\n'
     '模型设置可选择虾盘云或自带 OpenAI 兼容 API；设置、密钥及备份、对话保存在 data/，请妥善保管。\n'
     'Windows 与 Mac 共用一只盘时请使用 exFAT 格式；Mac 不能写入 NTFS。\n'
