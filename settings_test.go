@@ -91,7 +91,7 @@ func TestModelConnectionTestDoesNotSaveAndUsesOnlySelectedKey(t *testing.T) {
 		w.Write([]byte(`{"choices":[{"message":{"tool_calls":[{"function":{"name":"connection_check"}}]}}]}`))
 	}))
 	defer server.Close()
-	if err := saveWallet(root, WalletState{APIKey: "sk-wallet-must-not-be-sent"}); err != nil {
+	if _, err := newFileAtomic(root, []string{"data", "wallet", "device.json"}, []byte(`{"apiKey":"sk-wallet-must-not-be-sent"}`)); err != nil {
 		t.Fatal(err)
 	}
 	input := map[string]any{"expected_revision": "initial", "source": "custom", "model": "fixture-model", "base_url": server.URL + "/v1", "api_key": "sk-test-custom"}
@@ -99,7 +99,7 @@ func TestModelConnectionTestDoesNotSaveAndUsesOnlySelectedKey(t *testing.T) {
 		t.Fatal(err)
 	}
 	s, _ := selectedModel(root)
-	if calls != 1 || s.Revision != "initial" || s.Source != "cloud" {
+	if calls != 1 || s.Revision != "initial" || s.Source != "custom" {
 		t.Fatal("test changed saved selection")
 	}
 	input["base_url"] = "http://remote.example/v1"
@@ -145,10 +145,6 @@ func TestCompactPackageRuntimeInventory(t *testing.T) {
 	}
 	if err := os.WriteFile(p, []byte("inventory fixture"), 0600); err != nil {
 		t.Fatal(err)
-	}
-	scan, err := scanResources(root)
-	if err != nil || len(scan.Warnings) != 0 || len(scan.Files) != 1 || scan.Files[0].Path != "app/runtime/picoclaw/windows-x64/picoclaw.exe" {
-		t.Fatalf("compact runtime not discoverable: %#v %v", scan, err)
 	}
 	resolved, err := runtimeResourcePath(root, "runtime/picoclaw/windows-x64/picoclaw.exe")
 	if err != nil || resolved != p {

@@ -12,7 +12,7 @@ import (
 )
 
 // The user's selection is authoritative. Per-turn PicoClaw files are derived
-// from this portable state; wallet refreshes never replace it.
+// from this portable state; credentials never enter action responses.
 type ModelSettings struct {
 	Revision string `json:"revision"`
 	Source   string `json:"source"`
@@ -24,7 +24,7 @@ type ModelSettings struct {
 var settingsLocks sync.Map
 
 func loadModelSettings(root string) (ModelSettings, error) {
-	s := ModelSettings{Revision: "initial", Source: "cloud", Model: cloudConfig().Preferred}
+	s := ModelSettings{Revision: "initial", Source: "custom"}
 	p, err := writablePath(root, "data", "settings", "model.json")
 	if err != nil {
 		return s, err
@@ -39,12 +39,16 @@ func loadModelSettings(root string) (ModelSettings, error) {
 	if len(b) > 65536 || json.Unmarshal(b, &s) != nil {
 		return s, errors.New("模型设置损坏，已保留原文件，请从本盘备份恢复")
 	}
+	if s.Source == "cloud" {
+		s.Source, s.Model, s.BaseURL, s.APIKey = "custom", "", "", ""
+		return s, nil
+	}
 	return s, validateModelSettings(s)
 }
 
 func validateModelSettings(s ModelSettings) error {
-	if s.Source != "cloud" && s.Source != "custom" {
-		return errors.New("请选择虾盘云或自带 API")
+	if s.Source != "custom" {
+		return errors.New("仅支持公司提供的 OpenAI 兼容 API")
 	}
 	if s.Model == "" || len(s.Model) > 200 || strings.ContainsAny(s.Model, "\r\n\x00") {
 		return errors.New("请填写有效模型 ID")
@@ -88,13 +92,6 @@ func modelSettingsAction(ctx context.Context, root, id string, input map[string]
 	next.Source = str(input, "source")
 	next.Model = strings.TrimSpace(str(input, "model"))
 	next.BaseURL = strings.TrimRight(strings.TrimSpace(str(input, "base_url")), "/")
-	if next.Source == "cloud" {
-		next.BaseURL = ""
-		next.APIKey = ""
-		if next.Model == "" {
-			next.Model = cloudConfig().Preferred
-		}
-	}
 	if next.Source == "custom" {
 		// Never silently send a saved credential to a newly entered endpoint.
 		if next.BaseURL != s.BaseURL || s.Source != "custom" {
@@ -126,13 +123,6 @@ func modelSettingsAction(ctx context.Context, root, id string, input map[string]
 		return nil, errors.New("未知模型设置动作")
 	}
 	key, base := next.APIKey, next.BaseURL
-	if next.Source == "cloud" {
-		key, err = walletKey(root)
-		base = cloudConfig().API + "/v1"
-		if err != nil {
-			return nil, err
-		}
-	}
 	var response struct {
 		Choices []struct {
 			Message struct {
@@ -144,7 +134,7 @@ func modelSettingsAction(ctx context.Context, root, id string, input map[string]
 			} `json:"message"`
 		} `json:"choices"`
 	}
-	inputBody := map[string]any{"model": next.Model, "messages": []map[string]string{{"role": "user", "content": "Call connection_check once. This is a connection test."}}, "max_tokens": cloudResponseLimit(next.Model), "stream": false, "tools": []any{map[string]any{"type": "function", "function": map[string]any{"name": "connection_check", "description": "Test the connection without performing any operation", "parameters": map[string]any{"type": "object", "properties": map[string]any{}}}}}}
+	inputBody := map[string]any{"model": next.Model, "messages": []map[string]string{{"role": "user", "content": "Call connection_check once. This is a connection test."}}, "max_tokens": modelResponseLimit(next.Model), "stream": false, "tools": []any{map[string]any{"type": "function", "function": map[string]any{"name": "connection_check", "description": "Test the connection without performing any operation", "parameters": map[string]any{"type": "object", "properties": map[string]any{}}}}}}
 	if err = remoteJSON(ctx, base, "/chat/completions", "POST", key, inputBody, &response); err != nil {
 		return nil, fmt.Errorf("模型连接测试未通过：%w", err)
 	}

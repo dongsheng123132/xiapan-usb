@@ -14,18 +14,17 @@ import (
 	"time"
 )
 
-// One schema and one executor serve both native PicoClaw and the cloud adapter.
+// One schema and one executor serve the native PicoClaw adapter.
 func maintenanceToolSchema() map[string]any {
 	ids := []string{}
 	for id := range chatReadActions {
 		ids = append(ids, id)
 	}
-	ids = append(ids, "tools.install", "tools.launch", "report.create")
+	ids = append(ids, "tools.launch", "report.create")
 	sort.Strings(ids)
 	return map[string]any{"type": "object", "properties": map[string]any{
-		"action":     map[string]any{"type": "string", "enum": ids},
-		"package_id": map[string]any{"type": "string", "enum": []string{"portable-check"}},
-		"tool_id":    map[string]any{"type": "string", "enum": builtinToolIDs()},
+		"action":  map[string]any{"type": "string", "enum": ids},
+		"tool_id": map[string]any{"type": "string", "enum": builtinToolIDs()},
 	}, "required": []string{"action"}, "additionalProperties": false}
 }
 
@@ -135,7 +134,7 @@ func startPicoMCP(ctx context.Context, root string, session *ChatSession) (map[s
 }
 
 func requireBuiltinTool(id string) error {
-	for _, t := range nativeTools() {
+	for _, t := range builtinTools {
 		if t.ID == id {
 			return nil
 		}

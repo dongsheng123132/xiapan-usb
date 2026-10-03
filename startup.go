@@ -37,11 +37,8 @@ foreach($loc in $folders){
 ConvertTo-Json -InputObject @{items=@($rows.ToArray());warnings=@($warnings.ToArray());scope='Run / Run32 注册表与当前用户、公共启动文件夹';note='只读检测，未关闭任何启动项。状态未知表示没有可判定的启用记录；不包含全部服务、计划任务及其他自启机制。'} -Depth 4 -Compress`
 
 func inspectStartup(ctx context.Context, root string) (any, error) {
-	if runtime.GOOS == "darwin" {
-		return inspectLaunchItems(ctx)
-	}
 	if runtime.GOOS != "windows" {
-		return nil, errors.New("此版本的启动项读取支持 Windows 与 macOS")
+		return nil, errors.New("此版本的启动项读取仅支持 Windows")
 	}
 	deadline, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()

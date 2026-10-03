@@ -137,8 +137,8 @@ func TestNextStepReadsMeasurementsNotVerdictText(t *testing.T) {
 	if step["tool_id"] != toolNetworkSettings || step["reason"] != reasonDNS || step["name"] == "" {
 		t.Fatalf("%#v", step)
 	}
-	if broken["verdict"] != "网络正常。" || broken["tests"] == nil || broken["adapters"] == nil {
-		t.Fatal("engine fields were not preserved")
+	if broken["verdict"] == "网络正常。" || broken["suggestion"] != nil || broken["tests"] == nil || broken["adapters"] == nil {
+		t.Fatal("raw evidence lost or speculative repair advice preserved")
 	}
 }
 

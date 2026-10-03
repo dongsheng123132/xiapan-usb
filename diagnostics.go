@@ -4,9 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"net"
-	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -91,35 +88,4 @@ func inspectProcesses(ctx context.Context, root string) (any, error) {
 		rows = rows[:20]
 	}
 	return map[string]any{"processes": rows, "note": "按当前工作集内存排序，非实时 CPU 占用；未读取命令行、未结束进程。"}, nil
-}
-
-func diagnoseNetwork(ctx context.Context) (any, error) {
-	interfaces, err := inspectNetwork()
-	if err != nil {
-		return nil, err
-	}
-	u, err := url.Parse(cloudConfig().API)
-	if err != nil {
-		return nil, errors.New("云端地址配置异常")
-	}
-	probeCtx, cancel := context.WithTimeout(ctx, 9*time.Second)
-	defer cancel()
-	started := time.Now()
-	addresses, dnsErr := net.DefaultResolver.LookupHost(probeCtx, u.Hostname())
-	checks := []map[string]any{{"name": "虾盘云 DNS", "ok": dnsErr == nil, "addresses": addresses, "elapsed_ms": time.Since(started).Milliseconds()}}
-	address, err := serviceURL(cloudConfig().API, "/v1/models")
-	if err != nil {
-		return nil, err
-	}
-	req, _ := http.NewRequestWithContext(probeCtx, "GET", address, nil)
-	started = time.Now()
-	response, httpErr := (&http.Client{Timeout: 8 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}).Do(req)
-	check := map[string]any{"name": "虾盘云 HTTPS", "ok": false, "elapsed_ms": time.Since(started).Milliseconds()}
-	if httpErr == nil {
-		response.Body.Close()
-		check["status"] = response.StatusCode
-		check["ok"] = response.StatusCode >= 200 && response.StatusCode < 500
-	}
-	checks = append(checks, check)
-	return map[string]any{"interfaces": interfaces, "checks": checks, "note": "只证明这些检查目标的 DNS/HTTPS 状态，不代表所有网站可用；未更改 DNS、代理或防火墙。"}, nil
 }

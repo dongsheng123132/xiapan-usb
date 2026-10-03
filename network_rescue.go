@@ -137,13 +137,13 @@ type NextStep struct{ ToolID, Reason string }
 
 // The reasons are fixed strings so that the interface can translate them.
 const (
-	reasonProxy      = "系统代理指向外部地址，网页因此打不开：在打开的设置里进入「代理」，关闭手动代理。"
-	reasonLocalProxy = "本机代理（如 Clash/V2Ray）无法上网：先确认该软件在运行；若不再使用，在打开的设置里进入「代理」关闭它。"
+	reasonProxy      = "代理路径的网页探测失败，直连探测成功：核对公司代理地址、认证和准入策略；未经批准不要关闭代理。"
+	reasonLocalProxy = "本机代理路径探测失败：核对公司 VPN 或代理客户端的运行与认证状态，再按内部运维流程处理。"
 	reasonNoAdapter  = "没有检测到已连接的网卡：先确认网线已插好或 Wi-Fi 已打开，再在设备管理器的「网络适配器」里看是否缺失、带黄色感叹号或被禁用；缺驱动时按硬件 ID 去厂商官网准备。"
-	reasonDNS        = "能连上外网 IP 但域名解析失败：在打开的设置里进入当前网络的属性，把 DNS 服务器改成公共 DNS（如 223.5.5.5）；仍不行就在「网络重置」中重置，重启后生效。"
-	reasonWinsock    = "IP 和 DNS 都正常但网页打不开，疑似 Winsock/TCP-IP 损坏：在打开的设置里进入「网络重置」重置网络适配器，重启后生效。"
-	reasonRouter     = "能连上路由器但出不了外网：先检查路由器或光猫的网络并重启它们；仍不行，在打开的设置里查看连接状态，或用「网络重置」。"
-	reasonGateway    = "连不上网关：先检查网线或 Wi-Fi 是否已连接、路由器是否通电；在打开的设置里可查看连接状态，必要时用「网络重置」。"
+	reasonDNS        = "公网 IP 探测成功但域名解析失败：核对公司指定的 DNS、VPN 和域名策略；不要直接改成公共 DNS。"
+	reasonWinsock    = "IP 与 DNS 探测成功，但网页探测失败：核对公司代理、证书、访问控制和目标站点，不凭单次探测认定系统损坏。"
+	reasonRouter     = "网关可达，公网探测失败：核对出口策略、上游链路与网络准入；不要直接重启公司路由器或重置电脑网络。"
+	reasonGateway    = "网关探测未成功：核对网线、Wi-Fi、地址和 VLAN；网关也可能禁止 ICMP，需结合其他证据判断。"
 )
 
 // proxyIsLoopback reports whether every entry of a WinINET ProxyServer value
@@ -233,10 +233,14 @@ func annotateNetworkResult(r map[string]any) error {
 	p.Enabled, _ = proxy["enabled"].(bool)
 	p.Server, _ = proxy["server"].(string)
 	step := networkNextStep(t, p, len(adapters))
+	delete(r, "suggestion")
+	r["verdict"] = "本次公网探测通过；仍需验证用户实际访问的公司业务。"
+	r["scope"] = "探测结果可能受到企业防火墙、代理与准入策略影响，不代表所有业务网络可用。"
 	if step == nil {
 		r["next_step"] = nil
 		return nil
 	}
+	r["verdict"] = "部分网络探测未通过，请结合公司网络策略复核下方证据。"
 	r["next_step"] = map[string]any{"tool_id": step.ToolID, "name": builtinToolName(step.ToolID), "reason": step.Reason}
 	return nil
 }
