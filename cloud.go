@@ -113,7 +113,7 @@ var walletLocks sync.Map
 // adapter module is omitted from a build.
 var nativeAgent struct {
 	ApplyKey func(string, string) error
-	Chat     func(context.Context, string, *ChatSession, string) (string, error)
+	Chat     func(context.Context, string, *ChatSession, string, string) (string, error)
 }
 var errWalletCorrupt = errors.New("钱包文件损坏，已保留原文件；可填入备份的凭证")
 

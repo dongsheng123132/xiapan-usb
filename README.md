@@ -8,7 +8,7 @@
 
 **Portable PC maintenance tools, with optional AI.**
 
-![Preview](https://img.shields.io/badge/version-0.4.2%20preview-8b6b33)
+![Preview](https://img.shields.io/badge/version-0.4.3%20preview-8b6b33)
 ![Go](https://img.shields.io/badge/Go-1.24%2B-367a8d)
 ![License](https://img.shields.io/badge/license-MIT-527c46)
 ![AI optional](https://img.shields.io/badge/AI-optional-4c7770)
@@ -28,6 +28,26 @@ Inspect a computer, find a useful tool, and keep your settings and reports on yo
 | Choose a tool | A searchable catalog with clear availability and official download links. |
 | Keep it portable | Settings, conversations and maintenance reports stay on your drive. |
 | Connect your AI | Bring your own compatible API, use Xiapan Cloud, or prepare an optional local model. |
+| Your language | Switch the whole interface between Chinese and English. The choice is saved on the drive, and AI answers follow it. |
+
+### What makes it small and quick
+
+| Property | Reality |
+| --- | --- |
+| About 44 MiB | The slim package ships the program and PicoClaw; it carries no offline model, no drivers and no rescue images. |
+| Double-click to run | No Node.js or Python install, and no per-machine setup. |
+| Works offline | Local inspection tools and the maintenance guide need no cloud wallet; the optional offline model runs on the CPU. |
+| Written for three systems | Windows, macOS and Linux are build targets for the core. The full packaged drive is **Windows x64 today**; macOS and Linux are not yet a complete packaged experience. |
+
+## Interface language
+
+The language selector in the top bar switches every application-owned label between **简体中文** and **English**. It saves to `data/settings/ui.json` on the drive, so the choice follows you to the next computer, and it also tells the AI which language to answer in.
+
+Chat text, file paths, raw JSON evidence and your own session titles are never translated — only the interface itself. If the language resource fails to load, the interface stays in Chinese rather than breaking.
+
+## Sidebar
+
+The navigation sidebar is visible by default, with a toggle to collapse it into a narrow icon rail. The collapsed state is remembered in the browser. Below 780px the sidebar becomes an overlay drawer that the **History** button opens, so the content is never squeezed on a small screen.
 
 ## Quick start
 
