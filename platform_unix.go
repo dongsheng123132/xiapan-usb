@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+func launchElevatedTool(ctx context.Context, program string, args []string, cause error) (int, error) {
+	return 0, cause
+}
+
 func quietProcess(cmd *exec.Cmd) {}
 
 func nativeSystemDir() string { return "" }

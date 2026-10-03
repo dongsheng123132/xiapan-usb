@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -21,6 +22,7 @@ type BuiltinTool struct {
 }
 
 var builtinTools = []BuiltinTool{
+	{"task-manager", "Windows 任务管理器", "查看启动应用、进程与性能。", "Taskmgr.exe", nil},
 	{"disk-cleanup", "Windows 磁盘清理", "由你选择清理项与目标磁盘；不自动删除文件。", "cleanmgr.exe", nil},
 	{"device-manager", "Windows 设备管理器", "查看设备状态，手动选择已匹配的驱动；不自动装驱动。", "mmc.exe", []string{"devmgmt.msc"}},
 	{"system-info", "Windows 系统信息", "查看系统和硬件详情，工具由 Windows 提供。", "msinfo32.exe", nil},
@@ -108,7 +110,11 @@ func launchTool(ctx context.Context, id string, confirmed bool) (any, error) {
 		// launch action; no arbitrary path, command or argument comes from input.
 		cmd := exec.Command(program, args...)
 		if err := cmd.Start(); err != nil {
-			return nil, errors.New("系统未接受工具启动请求")
+			if pid, launchErr := launchElevatedTool(ctx, program, args, err); launchErr == nil {
+				return map[string]any{"tool_id": id, "name": t.Name, "pid": pid, "launch_requested": true, "maintenance_performed": false, "note": "系统已接受提权启动请求，后续操作由你在工具中完成。"}, nil
+			} else {
+				return nil, fmt.Errorf("打开 %s 失败：%w", t.Name, launchErr)
+			}
 		}
 		pid := cmd.Process.Pid
 		go cmd.Wait()

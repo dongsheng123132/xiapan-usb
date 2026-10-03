@@ -3,11 +3,47 @@
 package main
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"os/exec"
 	"strings"
 	"syscall"
+	"time"
 	"unsafe"
 )
+
+// Only a tool already selected by the user may reach this fallback. Elevate
+// that native tool, never the whole assistant or arbitrary model commands.
+func launchElevatedTool(ctx context.Context, program string, args []string, cause error) (int, error) {
+	if !errors.Is(cause, syscall.Errno(740)) {
+		return 0, cause
+	}
+	deadline, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	result := make(chan error, 1)
+	go func() {
+		verb, _ := syscall.UTF16PtrFromString("runas")
+		file, _ := syscall.UTF16PtrFromString(program)
+		quoted := []string{}
+		for _, a := range args {
+			quoted = append(quoted, syscall.EscapeArg(a))
+		}
+		parameters, _ := syscall.UTF16PtrFromString(strings.Join(quoted, " "))
+		code, _, _ := syscall.NewLazyDLL("shell32.dll").NewProc("ShellExecuteW").Call(0, uintptr(unsafe.Pointer(verb)), uintptr(unsafe.Pointer(file)), uintptr(unsafe.Pointer(parameters)), 0, 1)
+		if code <= 32 {
+			result <- fmt.Errorf("Windows 未完成管理员授权或启动（错误码 %d）", code)
+		} else {
+			result <- nil
+		}
+	}()
+	select {
+	case err := <-result:
+		return 0, err
+	case <-deadline.Done():
+		return 0, errors.New("等待 Windows 授权超时；请检查或取消系统提示，勿重复启动")
+	}
+}
 
 func quietProcess(cmd *exec.Cmd) { cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: 0x08000000} }
 

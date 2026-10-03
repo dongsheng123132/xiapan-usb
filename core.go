@@ -85,6 +85,14 @@ func scanResources(root string) (ResourceScan, error) {
 	out := ResourceScan{Files: []Resource{}, Warnings: []string{}}
 	for _, kind := range []string{"models", "packages", "images", "drivers", "runtime"} {
 		dir := filepath.Join(root, kind)
+		if kind == "runtime" {
+			var err error
+			dir, err = runtimeResourcePath(root, "runtime/")
+			if err != nil {
+				out.Warnings = append(out.Warnings, "运行时路径不可用")
+				continue
+			}
+		}
 		info, err := os.Lstat(dir)
 		if errors.Is(err, os.ErrNotExist) {
 			continue

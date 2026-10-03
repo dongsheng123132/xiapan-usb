@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-const version = "0.3.0-preview"
+const version = "0.4.0-preview"
 
 //go:embed web/* skills/*/SKILL.md catalog/*.json
 var assets embed.FS
@@ -43,6 +43,10 @@ type Action struct {
 }
 
 var actions = []Action{
+	{"settings.model.get", "模型设置", "读取本盘模型选择，不返回密钥", false},
+	{"settings.model.save", "保存模型设置", "保存自带 API 或虾盘云选择到本盘", true},
+	{"settings.model.test", "测试模型连接", "发送一次工具调用测试，不保存设置", false},
+	{"startup.inspect", "查看启动项", "读取常见 Windows 启动项及启用状态，不修改", false},
 	{"wallet.ensure", "设备钱包", "联网自动取得钱包；失败不阻塞维护工具", true},
 	{"wallet.refresh", "刷新余额", "只读查询当前钱包余额", false},
 	{"wallet.adopt", "填入已有钱包", "验证并使用已有凭证，不搬动余额", true},
@@ -78,6 +82,10 @@ func runAction(ctx context.Context, root, id string, input map[string]any) Resul
 	var data any
 	var err error
 	switch id {
+	case "settings.model.get", "settings.model.save", "settings.model.test":
+		data, err = modelSettingsAction(ctx, root, id, input)
+	case "startup.inspect":
+		data, err = inspectStartup(ctx, root)
 	case "wallet.ensure", "wallet.refresh", "wallet.adopt", "wallet.copy", "wallet.rotate", "wallet.reset", "wallet.recharge":
 		data, err = walletAction(ctx, root, id, input)
 	case "cloud.models":

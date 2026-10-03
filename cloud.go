@@ -69,13 +69,13 @@ func remoteJSON(ctx context.Context, base, path, method, key string, input, outp
 	client := &http.Client{Timeout: 48 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	response, err := client.Do(req)
 	if err != nil {
-		return errors.New("暂时无法连接虾盘云；本地工具仍可使用")
+		return errors.New("暂时无法连接所选服务；本地工具仍可使用")
 	}
 	defer response.Body.Close()
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		switch response.StatusCode {
 		case 401:
-			return errors.New("钱包凭证未通过验证，请刷新或填入已有钱包")
+			return errors.New("凭证未通过验证，请检查所选服务的 API Key 或钱包")
 		case 402, 403:
 			return errors.New("云端拒绝本次请求；可能是额度不足或模型权限受限，请检查钱包")
 		case 429:

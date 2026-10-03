@@ -91,7 +91,7 @@ func chatAction(ctx context.Context, root, id string, input map[string]any) (any
 		return nil, nil
 	}
 	if id == "chat.start" {
-		s := ChatSession{ID: uniqueID(), Title: "新的维护任务", Messages: []ChatMessage{}, Pending: []Proposal{}, Engine: "pico"}
+		s := ChatSession{ID: uniqueID(), Title: "新对话", Messages: []ChatMessage{}, Pending: []Proposal{}, Engine: "pico"}
 		if err := saveChat(root, &s); err != nil {
 			return nil, err
 		}
@@ -256,7 +256,7 @@ func readAction(ctx context.Context, root string, s *ChatSession, id string) err
 }
 func runSlash(ctx context.Context, root string, s *ChatSession, message string) error {
 	cmd := strings.Fields(message)[0]
-	aliases := map[string]string{"/体检": "system.inspect", "/inspect": "system.inspect", "/网络": "network.diagnose", "/network": "network.diagnose", "/资源": "resources.scan", "/resources": "resources.scan", "/进程": "processes.inspect", "/processes": "processes.inspect", "/模型": "models.inspect", "/models": "models.inspect", "/驱动": "drivers.inspect", "/drivers": "drivers.inspect", "/工具": "tools.catalog", "/tools": "tools.catalog"}
+	aliases := map[string]string{"/启动项": "startup.inspect", "/startup": "startup.inspect", "/体检": "system.inspect", "/inspect": "system.inspect", "/网络": "network.diagnose", "/network": "network.diagnose", "/资源": "resources.scan", "/resources": "resources.scan", "/进程": "processes.inspect", "/processes": "processes.inspect", "/模型": "models.inspect", "/models": "models.inspect", "/驱动": "drivers.inspect", "/drivers": "drivers.inspect", "/工具": "tools.catalog", "/tools": "tools.catalog"}
 	if id := aliases[cmd]; id != "" {
 		return readAction(ctx, root, s, id)
 	}
@@ -283,11 +283,11 @@ func runSlash(ctx context.Context, root string, s *ChatSession, message string) 
 		addMessage(s, "assistant", "如果电脑无法进入系统，需要从独立的 WinPE 或 Linux 救援环境启动。先备份重要数据，再辨认目标磁盘。当前程序不写引导、不重装；资源页可查看已准备的镜像。格式化成 exFAT 本身不会让 U 盘可启动。")
 		return nil
 	}
-	addMessage(s, "assistant", "本盘命令：/体检 /网络 /驱动 /工具 /资源 /进程 /模型 /报告 /安装 /救援。它们调用真实维护动作，可在专业模式查看结果。这里不是任意系统命令终端。")
+	addMessage(s, "assistant", "本盘命令：/启动项 /体检 /网络 /驱动 /工具 /资源 /进程 /模型 /报告 /安装 /救援。它们调用真实维护动作，可在专业模式查看结果。这里不是任意系统命令终端。")
 	return nil
 }
 
-var chatReadActions = map[string]bool{"system.inspect": true, "network.inspect": true, "network.diagnose": true, "processes.inspect": true, "resources.scan": true, "models.inspect": true, "reports.list": true, "drivers.inspect": true, "tools.catalog": true}
+var chatReadActions = map[string]bool{"startup.inspect": true, "system.inspect": true, "network.inspect": true, "network.diagnose": true, "processes.inspect": true, "resources.scan": true, "models.inspect": true, "reports.list": true, "drivers.inspect": true, "tools.catalog": true}
 
 func modelTool(ctx context.Context, root string, s *ChatSession, id string, input map[string]any) any {
 	if chatReadActions[id] {
@@ -477,6 +477,9 @@ func localConversation(ctx context.Context, root string, s *ChatSession, message
 		return nil
 	}
 	ids := []string{}
+	if containsAny(message, "启动项", "开机自启") {
+		ids = append(ids, "startup.inspect")
+	}
 	if containsAny(message, "电脑", "内存", "磁盘", "慢", "体检") {
 		ids = append(ids, "system.inspect")
 	}

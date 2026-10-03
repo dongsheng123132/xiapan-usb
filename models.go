@@ -54,9 +54,21 @@ func aiManifest() (AIManifest, error) {
 	return m, err
 }
 
+// Compact packages keep program resources under app/. Existing USB layouts
+// remain supported. Both paths must pass the same containment checks.
+func runtimeResourcePath(root, rel string) (string, error) {
+	path, err := writablePath(root, strings.Split(rel, "/")...)
+	if err != nil {
+		return "", err
+	}
+	if _, err = os.Lstat(path); errors.Is(err, os.ErrNotExist) && strings.HasPrefix(rel, "runtime/") {
+		return writablePath(root, strings.Split("app/"+rel, "/")...)
+	}
+	return path, nil
+}
+
 func verifyResource(root, rel, expected string) (string, error) {
-	parts := strings.Split(rel, "/")
-	path, err := writablePath(root, parts...)
+	path, err := runtimeResourcePath(root, rel)
 	if err != nil {
 		return "", err
 	}
