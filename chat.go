@@ -241,7 +241,7 @@ func propose(s *ChatSession, id string, input map[string]any) {
 		text = "安装内置便携体检工具到本盘新目录，校验文件并实际启动验证；不修改宿主软件"
 	}
 	if id == "tools.launch" {
-		text = "打开「" + builtinToolName(str(input, "tool_id")) + "」。只打开系统界面，不自动清理、卸载或安装驱动。"
+		text = "打开「" + builtinToolName(str(input, "tool_id")) + "」。仅启动工具，不自动清理、卸载或安装驱动。"
 	}
 	s.Messages = append(s.Messages, ChatMessage{ID: uniqueID(), Role: "proposal", Text: text, Action: id, ProposalID: p.ID})
 	publishProgress(s)

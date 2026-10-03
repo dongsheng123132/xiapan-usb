@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-const version = "0.4.0-preview"
+const version = "0.4.1-preview"
 
 //go:embed web/* skills/*/SKILL.md catalog/*.json
 var assets embed.FS
@@ -65,7 +65,7 @@ var actions = []Action{
 	{"network.diagnose", "网络诊断", "检查网卡、DNS 与云端连通性，不改配置", false},
 	{"drivers.inspect", "网络设备与驱动", "离线读取网卡硬件 ID、驱动与故障码，查看盘内驱动", false},
 	{"tools.catalog", "维护工具集合", "查看系统工具与官方资源的真实准备状态", false},
-	{"tools.launch", "打开系统维护工具", "仅打开已注册的系统界面，不自动清理或安装驱动", true},
+	{"tools.launch", "打开维护工具", "打开系统或已校验的本盘便携工具，不自动清理或安装驱动", true},
 	{"system.inspect", "电脑体检", "读取系统、内存与磁盘信息", false},
 	{"network.inspect", "网络检查", "读取本机网络接口，不更改网络配置", false},
 	{"resources.scan", "查看盘内资源", "查看软件、模型、镜像和驱动，不执行发现的文件", false},
@@ -101,7 +101,7 @@ func runAction(ctx context.Context, root, id string, input map[string]any) Resul
 	case "tools.catalog":
 		data, err = toolCatalog(root)
 	case "tools.launch":
-		data, err = launchTool(ctx, str(input, "tool_id"), input["confirmed"] == true)
+		data, err = launchRegisteredTool(ctx, root, str(input, "tool_id"), input["confirmed"] == true)
 	case "system.inspect":
 		data, err = inspectSystem(root)
 	case "network.inspect":

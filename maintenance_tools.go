@@ -26,6 +26,8 @@ var builtinTools = []BuiltinTool{
 	{"disk-cleanup", "Windows 磁盘清理", "由你选择清理项与目标磁盘；不自动删除文件。", "cleanmgr.exe", nil},
 	{"device-manager", "Windows 设备管理器", "查看设备状态，手动选择已匹配的驱动；不自动装驱动。", "mmc.exe", []string{"devmgmt.msc"}},
 	{"system-info", "Windows 系统信息", "查看系统和硬件详情，工具由 Windows 提供。", "msinfo32.exe", nil},
+	{"resource-monitor", "Windows 资源监视器", "查看 CPU、磁盘、内存和网络占用。", "resmon.exe", nil},
+	{"event-viewer", "Windows 事件查看器", "查看系统与应用错误记录。", "mmc.exe", []string{"eventvwr.msc"}},
 }
 
 func builtinToolIDs() []string {
@@ -33,9 +35,17 @@ func builtinToolIDs() []string {
 	for _, t := range builtinTools {
 		ids = append(ids, t.ID)
 	}
+	for _, t := range portableTools() {
+		ids = append(ids, t.ID)
+	}
 	return ids
 }
 func builtinToolName(id string) string {
+	for _, t := range portableTools() {
+		if t.ID == id {
+			return t.Name
+		}
+	}
 	for _, t := range builtinTools {
 		if t.ID == id {
 			return t.Name
@@ -89,7 +99,7 @@ func toolCatalog(root string) (any, error) {
 	for _, f := range scan.Files {
 		counts[f.Kind]++
 	}
-	return map[string]any{"builtin_tools": rows, "resources": resources, "resource_counts": counts, "note": "系统工具只打开原生界面；外部工具列出官方入口。盘内文件需校验来源、许可证与适配后才能注册执行。"}, nil
+	return map[string]any{"builtin_tools": rows, "portable_tools": portableToolRows(root), "resources": resources, "resource_counts": counts, "note": "系统工具来自当前电脑；便携工具从本盘启动并校验固定文件。这里只打开工具，文件整理或清理需在工具中自行操作。"}, nil
 }
 func launchTool(ctx context.Context, id string, confirmed bool) (any, error) {
 	if !confirmed {
