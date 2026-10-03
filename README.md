@@ -1,4 +1,8 @@
-# 虾盘 · U 盘精灵 / Xiapan USB
+# Xiapan USB Toolkit · 虾盘 U 盘精灵
+
+**Portable PC maintenance tools, with optional AI.**
+
+Carry system diagnostics, portable utilities and your AI settings on a USB drive. Use the maintenance tools without AI, or connect your own OpenAI-compatible API. Windows x64 is the tested platform; full macOS and Linux support is under development.
 
 开源、便携、可接 AI 的电脑维护工具箱。自己的维护核心，按需接入第三方绿色工具和 AI。
 
