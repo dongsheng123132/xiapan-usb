@@ -256,7 +256,7 @@ func readAction(ctx context.Context, root string, s *ChatSession, id string) err
 }
 func runSlash(ctx context.Context, root string, s *ChatSession, message string) error {
 	cmd := strings.Fields(message)[0]
-	aliases := map[string]string{"/启动项": "startup.inspect", "/startup": "startup.inspect", "/体检": "system.inspect", "/inspect": "system.inspect", "/网络": "network.diagnose", "/network": "network.diagnose", "/资源": "resources.scan", "/resources": "resources.scan", "/进程": "processes.inspect", "/processes": "processes.inspect", "/模型": "models.inspect", "/models": "models.inspect", "/驱动": "drivers.inspect", "/drivers": "drivers.inspect", "/工具": "tools.catalog", "/tools": "tools.catalog"}
+	aliases := map[string]string{"/启动项": "startup.inspect", "/startup": "startup.inspect", "/体检": "system.inspect", "/inspect": "system.inspect", "/网络": "network.diagnose", "/network": "network.diagnose", "/断网": "network.rescue", "/急救": "network.rescue", "/资源": "resources.scan", "/resources": "resources.scan", "/进程": "processes.inspect", "/processes": "processes.inspect", "/模型": "models.inspect", "/models": "models.inspect", "/驱动": "drivers.inspect", "/drivers": "drivers.inspect", "/工具": "tools.catalog", "/tools": "tools.catalog"}
 	if id := aliases[cmd]; id != "" {
 		return readAction(ctx, root, s, id)
 	}
@@ -283,11 +283,11 @@ func runSlash(ctx context.Context, root string, s *ChatSession, message string) 
 		addMessage(s, "assistant", rescueAdvice())
 		return nil
 	}
-	addMessage(s, "assistant", "本盘命令：/启动项 /体检 /网络 /驱动 /工具 /资源 /进程 /模型 /报告 /安装 /救援。它们调用真实维护动作，可在专业模式查看结果。这里不是任意系统命令终端。")
+	addMessage(s, "assistant", "本盘命令：/启动项 /体检 /网络 /断网 /驱动 /工具 /资源 /进程 /模型 /报告 /安装 /救援。它们调用真实维护动作，可在专业模式查看结果。这里不是任意系统命令终端。")
 	return nil
 }
 
-var chatReadActions = map[string]bool{"startup.inspect": true, "system.inspect": true, "network.inspect": true, "network.diagnose": true, "processes.inspect": true, "resources.scan": true, "models.inspect": true, "reports.list": true, "drivers.inspect": true, "tools.catalog": true}
+var chatReadActions = map[string]bool{"startup.inspect": true, "system.inspect": true, "network.inspect": true, "network.diagnose": true, "processes.inspect": true, "resources.scan": true, "models.inspect": true, "reports.list": true, "drivers.inspect": true, "tools.catalog": true, "network.rescue": true}
 
 func modelTool(ctx context.Context, root string, s *ChatSession, id string, input map[string]any) any {
 	if chatReadActions[id] {

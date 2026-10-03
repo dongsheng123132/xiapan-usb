@@ -8,7 +8,7 @@
 
 **开源、便携、可接 AI 的电脑维护工具箱。**
 
-![Preview](https://img.shields.io/badge/version-0.4.3%20preview-8b6b33)
+![Preview](https://img.shields.io/badge/version-0.4.4%20preview-8b6b33)
 ![Go](https://img.shields.io/badge/Go-1.24%2B-367a8d)
 ![License](https://img.shields.io/badge/license-MIT-527c46)
 ![AI optional](https://img.shields.io/badge/AI-optional-4c7770)

@@ -28,6 +28,9 @@ var builtinTools = []BuiltinTool{
 	{"system-info", "Windows 系统信息", "查看系统和硬件详情，工具由 Windows 提供。", "msinfo32.exe", nil},
 	{"resource-monitor", "Windows 资源监视器", "查看 CPU、磁盘、内存和网络占用。", "resmon.exe", nil},
 	{"event-viewer", "Windows 事件查看器", "查看系统与应用错误记录。", "mmc.exe", []string{"eventvwr.msc"}},
+	// The settings page is opened through the same shell handler that opens links;
+	// the page, like every argument here, is fixed in this table.
+	{"network-settings", "Windows 网络设置", "打开网络状态页；代理、网络重置、网卡属性由你在页面中自己选择，虾盘不替你修改。", "rundll32.exe", []string{"url.dll,FileProtocolHandler", "ms-settings:network-status"}},
 }
 
 func builtinToolIDs() []string {
@@ -74,12 +77,14 @@ func builtinCommand(t BuiltinTool) (string, []string, bool) {
 	}
 	program := filepath.Join(dir, t.Program)
 	args := append([]string{}, t.Args...)
+	files := []string{program}
 	for i, a := range args {
 		if strings.HasSuffix(a, ".msc") {
 			args[i] = filepath.Join(dir, a)
+			files = append(files, args[i])
 		}
 	}
-	for _, path := range append([]string{program}, args...) {
+	for _, path := range files {
 		info, err := os.Stat(path)
 		if err != nil || !info.Mode().IsRegular() {
 			return "", nil, false
