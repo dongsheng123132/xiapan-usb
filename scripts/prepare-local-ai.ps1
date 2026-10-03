@@ -1,4 +1,4 @@
-param([string]$ProxyUrl='http://127.0.0.1:7897')
+﻿param([string]$ProxyUrl='http://127.0.0.1:7897')
 $ErrorActionPreference='Stop'
 $projectRoot=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $downloadDir=Join-Path $projectRoot '.cache\downloads'
@@ -38,6 +38,6 @@ $manifest=Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
 $manifest.ready=$true
 $manifest.engine_files=$engineFiles
 $temporaryManifest="$manifestPath.tmp"
-$manifest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $temporaryManifest -Encoding utf8NoBOM
+[IO.File]::WriteAllText($temporaryManifest, ($manifest | ConvertTo-Json -Depth 6) + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
 Move-Item -LiteralPath $temporaryManifest -Destination $manifestPath -Force
 Write-Output '本地模型资源已准备并校验。请重新构建，以将可信运行时清单嵌入程序。'
