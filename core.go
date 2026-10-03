@@ -87,7 +87,7 @@ func scanResources(root string) (ResourceScan, error) {
 		dir := filepath.Join(root, kind)
 		if kind == "runtime" {
 			var err error
-			dir, err = runtimeResourcePath(root, "runtime/")
+			dir, err = runtimeResourcePath(root, "runtime")
 			if err != nil {
 				out.Warnings = append(out.Warnings, "运行时路径不可用")
 				continue

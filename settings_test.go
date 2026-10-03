@@ -136,3 +136,22 @@ func TestModelSettingsCorruptionAndModelToolBoundary(t *testing.T) {
 		t.Fatal("startup evidence unavailable to agent")
 	}
 }
+
+func TestCompactPackageRuntimeInventory(t *testing.T) {
+	root := t.TempDir()
+	p := filepath.Join(root, "app", "runtime", "picoclaw", "windows-x64", "picoclaw.exe")
+	if err := os.MkdirAll(filepath.Dir(p), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(p, []byte("inventory fixture"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	scan, err := scanResources(root)
+	if err != nil || len(scan.Warnings) != 0 || len(scan.Files) != 1 || scan.Files[0].Path != "app/runtime/picoclaw/windows-x64/picoclaw.exe" {
+		t.Fatalf("compact runtime not discoverable: %#v %v", scan, err)
+	}
+	resolved, err := runtimeResourcePath(root, "runtime/picoclaw/windows-x64/picoclaw.exe")
+	if err != nil || resolved != p {
+		t.Fatalf("runtime location drift: %s %v", resolved, err)
+	}
+}

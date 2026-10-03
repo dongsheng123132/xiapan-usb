@@ -61,7 +61,7 @@ func runtimeResourcePath(root, rel string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if _, err = os.Lstat(path); errors.Is(err, os.ErrNotExist) && strings.HasPrefix(rel, "runtime/") {
+	if _, err = os.Lstat(path); errors.Is(err, os.ErrNotExist) && (rel == "runtime" || strings.HasPrefix(rel, "runtime/")) {
 		return writablePath(root, strings.Split("app/"+rel, "/")...)
 	}
 	return path, nil
