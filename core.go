@@ -24,6 +24,9 @@ import (
 
 type SystemInfo struct {
 	OS                   string   `json:"os"`
+	OSVersion            string   `json:"os_version,omitempty"`
+	HardwareModel        string   `json:"hardware_model,omitempty"`
+	CPUModel             string   `json:"cpu_model,omitempty"`
 	Arch                 string   `json:"arch"`
 	CPUThreads           int      `json:"cpu_threads"`
 	MemoryBytes          uint64   `json:"memory_bytes"`
@@ -45,7 +48,9 @@ type Volume struct {
 
 func inspectSystem(root string) (SystemInfo, error) {
 	memory, available, volumes, notes := platformInfo(root)
-	return SystemInfo{OS: runtime.GOOS, Arch: runtime.GOARCH, CPUThreads: runtime.NumCPU(), MemoryBytes: memory, AvailableMemoryBytes: available, PortableRoot: root, Version: version, Volumes: volumes, Notes: notes}, nil
+	info := SystemInfo{OS: runtime.GOOS, Arch: runtime.GOARCH, CPUThreads: runtime.NumCPU(), MemoryBytes: memory, AvailableMemoryBytes: available, PortableRoot: root, Version: version, Volumes: volumes, Notes: notes}
+	hostDetails(&info)
+	return info, nil
 }
 
 func inspectNetwork() (any, error) {
@@ -361,7 +366,7 @@ func maintenancePlan(ctx context.Context, root string, input map[string]any) (Pl
 	// Skills remain reusable by capable agents. This small explanation model
 	// receives prose only, so executable examples cannot become user advice.
 	skillText := regexp.MustCompile("`[^`]+`").ReplaceAllString(string(principles), "对应的检测按钮")
-	prompt := fmt.Sprintf("你是虾盘的维护说明助手。把下方已审核步骤解释给普通用户，使用不超过三句的简洁中文。只解释这些步骤，不添加新操作，不给命令或代码，不提接口名称。不要声称已经修好或已经查出原因。\n真实检测：系统 %s/%s，总内存 %.1f GiB。总内存不是当前空闲内存。体检按钮可读取系统、架构、总内存和磁盘剩余空间；不能读取进程、温度或 SMART，不能判断病毒。网络按钮只查看网卡与地址。\n已审核步骤：%s。\n参考维护经验：\n%s\n最后提醒用户点击页面下方的下一步按钮开始检测。", sys.OS, sys.Arch, float64(sys.MemoryBytes)/(1<<30), strings.Join(p.Steps, "；"), skillText)
+	prompt := fmt.Sprintf("你是虾盘的维护说明助手。把下方已审核步骤解释给普通用户，使用不超过三句的简洁中文。只解释这些步骤，不添加新操作，不给命令或代码，不提接口名称。不要声称已经修好或已经查出原因。\n真实检测：系统 %s，总内存 %.1f GiB。总内存不是当前空闲内存。体检按钮可读取系统、架构、总内存和磁盘剩余空间；不能读取进程、温度或 SMART，不能判断病毒。网络按钮只查看网卡与地址。\n已审核步骤：%s。\n参考维护经验：\n%s\n最后提醒用户点击页面下方的下一步按钮开始检测。", hostLabel(sys), float64(sys.MemoryBytes)/(1<<30), strings.Join(p.Steps, "；"), skillText)
 	payload := map[string]any{"model": model, "messages": []map[string]string{{"role": "system", "content": prompt}, {"role": "user", "content": message}}, "stream": false, "max_tokens": 384, "temperature": 0.2}
 	if backend == "llamacpp" || backend == "bundled" {
 		payload["chat_template_kwargs"] = map[string]bool{"enable_thinking": false}

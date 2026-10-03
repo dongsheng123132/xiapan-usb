@@ -139,7 +139,19 @@ func str(input map[string]any, key string) string { s, _ := input[key].(string);
 
 func main() {
 	defer stopAllModels()
-	args := os.Args[1:]
+	args := withoutProcessSerial(os.Args[1:])
+	if len(args) == 0 && runtime.GOOS == "darwin" {
+		if exe, err := os.Executable(); err == nil {
+			if _, inBundle := bundleRoot(filepath.Dir(exe)); inBundle {
+				if err = launchBundle(exe); err != nil {
+					fmt.Fprintln(os.Stderr, err)
+					alertUser("虾盘无法启动", err.Error())
+					os.Exit(1)
+				}
+				return
+			}
+		}
+	}
 	if len(args) > 0 && (args[0] == "version" || args[0] == "--version") {
 		fmt.Println(version)
 		return
@@ -188,7 +200,14 @@ func resolveRoot(root string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		root = filepath.Dir(exe)
+		if strings.Contains(exe, "/AppTranslocation/") {
+			origin, ok := translocatedOrigin(exe)
+			if !ok {
+				return "", errors.New(translocationHelp)
+			}
+			exe = origin
+		}
+		root, _ = bundleRoot(filepath.Dir(exe))
 	}
 	abs, err := filepath.Abs(root)
 	if err != nil {

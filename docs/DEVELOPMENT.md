@@ -11,6 +11,7 @@ git switch -c codex/macos-portable
 go test ./...
 go build -o dist/xiapan .
 ./dist/xiapan action run system.inspect --json --no-input
+./scripts/build.sh   # 四个平台；macOS 上另生成通用二进制
 # 编辑、测试完成后
 git add <本次修改的文件>
 git commit -m "feat: adapt macOS portable runtime"
@@ -24,7 +25,8 @@ git push -u origin codex/macos-portable
 | 文件 | 职责 |
 | --- | --- |
 | `core.go` / `main.go` | 无界面动作、CLI、HTTP 接口 |
-| `platform_windows.go` / `platform_unix.go` | 系统差异 |
+| `platform_*.go` | 系统差异 |
+| `macos.go` / `macos_darwin.go` | macOS 体检、启动项、系统工具、`虾盘.app` 启动器；见 [macOS 版](MACOS.md) |
 | `maintenance_tools.go` / `portable_tools.go` | 系统及便携工具注册、验证与启动 |
 | `pico.go` / `pico_mcp.go` | PicoClaw 适配与 MCP 动作边界 |
 | `settings.go` | 随盘设置、备份与并发修改保护 |
@@ -35,8 +37,10 @@ git push -u origin codex/macos-portable
 
 ## Mac/Linux 完整版还需要完成
 
-1. 为目标系统准备并校验 PicoClaw、本地推理运行时，按平台选择清单。
-2. 适配本机进程、磁盘和平台工具；Windows EXE 不能直接算作 Mac/Linux 工具。
+macOS 的已完成项、打包与签名流程、待验收清单见 [macOS 版](MACOS.md)。运行时清单按平台放在 `catalog/<名称>.<GOOS>-<GOARCH>.json`，不带后缀的文件仍是 Windows 清单。
+
+1. 为目标系统准备并校验 PicoClaw、本地推理运行时，按平台选择清单（macOS：`scripts/prepare-macos-runtime.py`）。
+2. 适配本机进程、磁盘和平台工具；Windows EXE 不能直接算作 Mac/Linux 工具。Mac 第三方便携工具和 Linux 仍待做。
 3. 验证 Intel / Apple Silicon、权限提示、外置盘路径、只读目录及退出清理。
 4. 测试拔盘再插、换电脑、断网、中文路径、干净系统启动；macOS 单独处理签名与公证，不以关闭安全功能作为默认使用步骤。
 

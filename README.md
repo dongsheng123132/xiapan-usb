@@ -16,7 +16,7 @@
 [Quick start](#quick-start) · [Platforms](#platforms) · [Build a USB package](#build-a-windows-usb-package) · [Contribute](CONTRIBUTING.md)
 
 > [!NOTE]
-> **Preview, not a universal repair disk.** Windows x64 has been tested on physical USB drives. Full macOS and Linux packages are still in development. This repository currently provides source; it does not ship all the tools or model weights.
+> **Preview, not a universal repair disk.** Windows x64 has been tested on physical USB drives. A macOS preview (`虾盘.app`) has been tested on Apple Silicon; Linux packages are still in development. This repository currently provides source; it does not ship all the tools or model weights.
 
 ## A maintenance kit you can carry
 
@@ -56,7 +56,7 @@ On Windows, use `go build -o dist/xiapan.exe .` and `./dist/xiapan.exe` instead.
 | Notepad++ | Edit text and configuration files |
 | SumatraPDF | Read PDF documents |
 
-The optional tools package includes these six utilities after official downloads and checksum verification. **An entry in the catalog is not an installed application.** Some tools remain download links because of licensing or incomplete validation. System tools include Task Manager, Resource Monitor, Event Viewer, Disk Cleanup, Device Manager and System Information.
+The optional tools package includes these six utilities after official downloads and checksum verification. **An entry in the catalog is not an installed application.** Some tools remain download links because of licensing or incomplete validation. System tools include Task Manager, Resource Monitor, Event Viewer, Disk Cleanup, Device Manager and System Information on Windows; Activity Monitor, Login Items, Storage, Disk Utility, System Information, Console and Wireless Diagnostics on macOS.
 
 ## AI is a choice
 
@@ -75,7 +75,8 @@ AI uses the same action core as the interface and CLI. Arbitrary shell execution
 | Platform | Verified scope |
 | --- | --- |
 | **Windows x64** | Basic flows on two physical USB drives; the six-utility package on one drive, using the same Windows computer. This is not a compatibility guarantee for every PC. |
-| macOS · Apple Silicon / Intel | Core cross-build targets exist. Native agent/model runtimes, system utilities and physical-device testing remain to be completed. |
+| macOS · Apple Silicon | Universal `虾盘.app`. Inspection, startup items, processes, network, system utilities, PicoClaw and the Metal-accelerated offline model tested on an M4 Mac running macOS 15. Third-party portable utilities are not adapted yet. See [macOS (Chinese)](docs/MACOS.md). |
+| macOS · Intel | The app and packaging support x64; x64 runtimes still need preparation and physical-device testing. |
 | Linux x64 | Core build and WSL inspection/report flows tested. Full desktop and physical USB workflows still need validation. |
 
 Several platform binaries can share one drive, but each OS runs its own executable. **This is not currently a bootable rescue OS** and cannot run inside a computer whose operating system will not start. Startup inspection covers common Run entries and startup folders, not every service or scheduled task; it does not disable entries automatically.
@@ -104,6 +105,18 @@ For the separately supported local-model resources, use `scripts/prepare-local-a
 app/       Engines, optional utilities, licenses and checksums
 data/      Your settings, conversations and reports
 ```
+
+## Build a macOS USB package
+
+On a Mac with Go, Python 3 and the Xcode command-line tools:
+
+```sh
+python3 scripts/prepare-macos-runtime.py --arch arm64   # optional PicoClaw and offline-model runtimes; add --with-model for the weights
+./scripts/build.sh
+python3 scripts/package-macos.py                         # add --with-local-ai to include the offline model
+```
+
+Double-click `虾盘.app` to open the toolkit in your browser. The default package is ad-hoc signed for drives you write yourself; downloadable copies need Developer ID signing and notarization. See [macOS (Chinese)](docs/MACOS.md).
 
 > [!IMPORTANT]
 > API keys and their backups are currently stored **in plaintext on the drive**. Keep the drive private. Moving it to another PC still requires a reachable provider and a valid key; a localhost model server must run on that PC. Preserve `data/` and each tool's personal configuration when updating. Never ship a used data directory to another customer.

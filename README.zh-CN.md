@@ -16,7 +16,7 @@
 [快速开始](#快速开始) · [平台支持](#平台支持) · [制作便携包](#制作-windows-便携包) · [参与贡献](CONTRIBUTING.md)
 
 > [!NOTE]
-> **当前为预览版。** Windows x64 已在实物 U 盘测试，Mac/Linux 完整包仍在适配。这个仓库提供源码，不包含全部第三方程序或模型权重；目前也不是可启动救援系统。
+> **当前为预览版。** Windows x64 已在实物 U 盘测试，macOS 预览版（`虾盘.app`）已在 Apple 芯片实测，Linux 完整包仍在适配。这个仓库提供源码，不包含全部第三方程序或模型权重；目前也不是可启动救援系统。
 
 ## 把维护工具带在身边
 
@@ -56,7 +56,7 @@ Windows 改为 `go build -o dist/xiapan.exe .`，再运行 `./dist/xiapan.exe`�
 | Notepad++ | 编辑文本和配置 |
 | SumatraPDF | 阅读 PDF 文档 |
 
-选装工具包从官方源下载、校验后打包这六款程序。**列入目录不等于已经安装。** 部分项目因许可或适配验收尚未完成，仅提供官方下载入口。系统工具包括任务管理器、资源监视器、事件查看器、磁盘清理、设备管理器和系统信息。
+选装工具包从官方源下载、校验后打包这六款程序。**列入目录不等于已经安装。** 部分项目因许可或适配验收尚未完成，仅提供官方下载入口。Windows 系统工具包括任务管理器、资源监视器、事件查看器、磁盘清理、设备管理器和系统信息；macOS 为活动监视器、登录项、存储空间、磁盘工具、系统信息、控制台和无线诊断。
 
 ## AI 按需使用
 
@@ -75,7 +75,8 @@ Windows 改为 `go build -o dist/xiapan.exe .`，再运行 `./dist/xiapan.exe`�
 | 平台 | 实际验证范围 |
 | --- | --- |
 | **Windows x64** | 两块实物 U 盘通过基础流程，其中一块通过六款工具包验证；使用同一台 Windows 电脑，不代表所有电脑均已兼容。 |
-| macOS · Apple Silicon / Intel | 有核心程序交叉构建目标；原生 Agent、模型运行时、工具和实机验证待完成。 |
+| macOS · Apple Silicon | `虾盘.app` 通用包；体检、启动项、进程、网络、系统工具、PicoClaw 与 Metal 离线模型已在 M4 / macOS 15 实测；第三方便携工具尚未适配，见 [macOS 版](docs/MACOS.md)。 |
+| macOS · Intel | 程序与打包已支持 x64；x64 运行时需准备并实机验证。 |
 | Linux x64 | 核心构建及 WSL 体检、报告流程通过；真实 Linux 桌面与便携盘仍需验证。 |
 
 一只盘可以保存多平台程序，但各系统运行自己的可执行文件。系统无法启动时，目前不能靠本工具代替启动救援环境。启动项检查覆盖常见 Run 项与启动文件夹，不包含所有服务/计划任务，也不自动关闭启动项。
@@ -104,6 +105,18 @@ python scripts/package-genie.py
 app/       引擎、可选工具、许可证和文件校验清单
 data/      个人设置、对话和报告
 ```
+
+## 制作 macOS 便携包
+
+在 Mac 上需要 Go、Python 3 和 Xcode 命令行工具：
+
+```sh
+python3 scripts/prepare-macos-runtime.py --arch arm64   # 可选：PicoClaw 与离线 AI 运行时，加 --with-model 下载模型
+./scripts/build.sh
+python3 scripts/package-macos.py                         # 加 --with-local-ai 附带离线 AI
+```
+
+双击 `虾盘.app` 即在浏览器中打开。默认包为 ad-hoc 签名，适合自己直接写入 U 盘；供下载分发需要 Developer ID 签名与公证，详见 [macOS 版](docs/MACOS.md)。
 
 > [!IMPORTANT]
 > API Key 及历史备份目前以**明文随盘保存**，请保管好整只盘。换电脑仍需服务可达、凭证有效；localhost 模型服务要在当前电脑启动。更新时保留 `data/` 和各工具的个人配置。发货模板不能复制已经使用过的数据目录。

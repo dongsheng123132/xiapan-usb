@@ -32,7 +32,7 @@ var builtinTools = []BuiltinTool{
 
 func builtinToolIDs() []string {
 	ids := []string{}
-	for _, t := range builtinTools {
+	for _, t := range nativeTools() {
 		ids = append(ids, t.ID)
 	}
 	for _, t := range portableTools() {
@@ -46,7 +46,7 @@ func builtinToolName(id string) string {
 			return t.Name
 		}
 	}
-	for _, t := range builtinTools {
+	for _, t := range nativeTools() {
 		if t.ID == id {
 			return t.Name
 		}
@@ -54,6 +54,17 @@ func builtinToolName(id string) string {
 	return id
 }
 func builtinCommand(t BuiltinTool) (string, []string, bool) {
+	if runtime.GOOS == "darwin" {
+		// LaunchServices opens the fixed Apple bundle or settings pane.
+		info, err := os.Stat(t.Program)
+		if err != nil || !info.IsDir() {
+			return "", nil, false
+		}
+		if len(t.Args) > 0 {
+			return "/usr/bin/open", append([]string{}, t.Args...), true
+		}
+		return "/usr/bin/open", []string{t.Program}, true
+	}
 	if runtime.GOOS != "windows" {
 		return "", nil, false
 	}
@@ -78,9 +89,9 @@ func builtinCommand(t BuiltinTool) (string, []string, bool) {
 }
 func toolCatalog(root string) (any, error) {
 	rows := []any{}
-	for _, t := range builtinTools {
+	for _, t := range nativeTools() {
 		_, _, ready := builtinCommand(t)
-		rows = append(rows, map[string]any{"id": t.ID, "name": t.Name, "description": t.Description, "ready": ready, "source": "当前 Windows 系统", "platform": "windows", "action": "tools.launch"})
+		rows = append(rows, map[string]any{"id": t.ID, "name": t.Name, "description": t.Description, "ready": ready, "source": "当前 " + osLabel(runtime.GOOS) + " 系统", "platform": runtime.GOOS, "action": "tools.launch"})
 	}
 	b, err := assets.ReadFile("catalog/maintenance.json")
 	if err != nil {
@@ -116,7 +127,7 @@ func launchTool(ctx context.Context, id string, confirmed bool) (any, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
-	for _, t := range builtinTools {
+	for _, t := range nativeTools() {
 		if t.ID != id {
 			continue
 		}
@@ -154,6 +165,14 @@ func inspectDrivers(ctx context.Context, root string) (any, error) {
 	}
 	out := map[string]any{"platform": runtime.GOOS, "devices": []any{}, "offline_files": files, "offline_truncated": scan.Truncated, "scan_warnings": scan.Warnings, "internet_required": false, "driver_install_supported": false,
 		"next_steps": []string{"先看设备故障码与硬件 ID，缺驱动不能只按文件名猜。", "可尝试有线网络或手机 USB 共享网络；手机也可能需要驱动。", "在有网电脑从整机或网卡厂商官网下载对应系统/架构的驱动，保留安装包和校验值，放到 drivers/<系统-架构>/<厂商-型号>/。", "驱动安装会改变系统，应确认匹配、备份并保留回滚方式，再到设备管理器操作。"}}
+	if runtime.GOOS == "darwin" {
+		out["devices"] = macNetworkDevices(ctx)
+		out["next_steps"] = []string{"先确认网络端口是否出现、是否已连接；Wi-Fi 问题可打开无线诊断。", "Mac 的网卡驱动随系统提供，一般不需要离线驱动包；第三方 USB 网卡按厂商说明安装并在系统设置中允许。", "可尝试有线网络或手机 USB 共享网络。", "系统扩展或驱动的安装会改变系统，应确认来源并保留卸载方式。"}
+		out["note"] = "读取 macOS 网络端口与网卡地址；macOS 不提供 Windows 式的驱动故障码。离线文件仅为库存，不自动安装。"
+		n, _ := inspectNetwork()
+		out["interfaces"] = n
+		return out, nil
+	}
 	if runtime.GOOS != "windows" {
 		out["note"] = "此平台暂提供网卡信息与离线驱动库存，尚未实现硬件 ID 和驱动故障码读取。"
 		n, _ := inspectNetwork()
