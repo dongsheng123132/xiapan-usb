@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-const version = "0.4.2-preview"
+const version = "0.4.3-preview"
 
 //go:embed web/* skills/*/SKILL.md catalog/*.json
 var assets embed.FS
@@ -43,6 +43,8 @@ type Action struct {
 }
 
 var actions = []Action{
+	{"settings.ui.get", "界面语言", "读取随盘保存的界面语言", false},
+	{"settings.ui.save", "保存界面语言", "保存中英文选择，不修改模型或对话", true},
 	{"settings.model.get", "模型设置", "读取本盘模型选择，不返回密钥", false},
 	{"settings.model.save", "保存模型设置", "保存自带 API 或虾盘云选择到本盘", true},
 	{"settings.model.test", "测试模型连接", "发送一次工具调用测试，不保存设置", false},
@@ -82,6 +84,8 @@ func runAction(ctx context.Context, root, id string, input map[string]any) Resul
 	var data any
 	var err error
 	switch id {
+	case "settings.ui.get", "settings.ui.save":
+		data, err = uiSettingsAction(root, id, input)
 	case "settings.model.get", "settings.model.save", "settings.model.test":
 		data, err = modelSettingsAction(ctx, root, id, input)
 	case "startup.inspect":
@@ -371,6 +375,8 @@ func newServer(root, base string) (*http.Server, error) {
 			w.Header().Set("Content-Type", "text/css; charset=utf-8")
 		case ".js":
 			w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+		case ".json":
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		}
 		w.Write(b)
 	})

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -78,7 +79,7 @@ func TestSystemToolsStayOnTheirPlatform(t *testing.T) {
 		}
 	}
 	for _, tool := range macTools {
-		if !filepath.IsAbs(tool.Program) || !strings.HasSuffix(tool.Program, ".app") {
+		if !path.IsAbs(tool.Program) || !strings.HasSuffix(tool.Program, ".app") {
 			t.Fatalf("mac tool %s is not a fixed app bundle", tool.ID)
 		}
 		for _, a := range tool.Args {

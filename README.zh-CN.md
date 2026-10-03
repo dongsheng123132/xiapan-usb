@@ -8,7 +8,7 @@
 
 **开源、便携、可接 AI 的电脑维护工具箱。**
 
-![Preview](https://img.shields.io/badge/version-0.4.2%20preview-8b6b33)
+![Preview](https://img.shields.io/badge/version-0.4.3%20preview-8b6b33)
 ![Go](https://img.shields.io/badge/Go-1.24%2B-367a8d)
 ![License](https://img.shields.io/badge/license-MIT-527c46)
 ![AI optional](https://img.shields.io/badge/AI-optional-4c7770)
@@ -28,6 +28,26 @@
 | 找到工具 | 可搜索分类的工具清单，明确显示已准备和待下载状态。 |
 | 随盘保存 | 模型设置、对话和维护报告保存在自己的 U 盘。 |
 | 自选 AI | 自带兼容 API、使用虾盘云，或另行准备可选离线模型。 |
+| 中英双语 | 整个界面可在中文与英文之间切换，选择随盘保存，AI 也按所选语言回答。 |
+
+### 小在哪、快在哪
+
+| 特性 | 实际情况 |
+| --- | --- |
+| 约 44 MiB | 精简包只带程序和 PicoClaw，不含离线模型、驱动和救援镜像。 |
+| 双击即用 | 免装 Node.js 和 Python，换台电脑也不用重新配置。 |
+| 断网可用 | 本地检测工具和维护向导不需要云端额度；可选离线模型在本机 CPU 上运行。 |
+| 面向三系统 | 核心程序在 Windows、macOS、Linux 上都有构建目标；**完整打包盘当前为 Windows x64**，macOS 和 Linux 还不是完整可用的成品。 |
+
+## 界面语言
+
+顶栏的语言选择器可在 **简体中文** 与 **English** 之间切换所有程序自带文案，选择保存在盘内 `data/settings/ui.json`，换台电脑依然生效，同时决定 AI 用什么语言回答。
+
+对话内容、文件路径、真实 JSON 证据、以及你自己起的会话标题都不翻译，只翻译界面本身。语言资源加载失败时界面保持中文，不会因此打不开。
+
+## 左侧栏目
+
+左侧导航默认显示，可通过顶部按钮收起为窄条图标栏，收起状态会记住。窗口宽度小于 780px 时，左侧栏改为浮层抽屉，由「对话记录」按钮打开，避免小屏被侧栏挤占。
 
 ## 快速开始
 

@@ -241,6 +241,13 @@ func agentToolHints() string {
 	return "空间分析可申请 windirstat，压缩解压可申请 peazip，先看工具清单确认是否已准备。清理 C 盘可先检查磁盘再申请打开 disk-cleanup；驱动修复先识别硬件与错误码再申请 device-manager。"
 }
 
+func agentToolHintsEN() string {
+	if runtime.GOOS == "darwin" {
+		return "This is a Mac: request login-items for startup items and activity-monitor for processes and memory; to free space check the disk first, then request storage-settings; use disk-utility for disk checks, wireless-diagnostics for Wi-Fi problems and console for logs. macOS ships its own network drivers, so offline driver packs are usually unnecessary; do not suggest Windows-only tools. "
+	}
+	return "windirstat is for disk space and peazip for archives; check the tool list first. disk-cleanup needs a disk check first; device-manager needs hardware IDs and error codes first. "
+}
+
 func hostLabel(sys SystemInfo) string {
 	if sys.OSVersion != "" {
 		return osLabel(sys.OS) + " " + sys.OSVersion + " / " + sys.Arch
