@@ -135,7 +135,7 @@ func startPicoMCP(ctx context.Context, root string, session *ChatSession) (map[s
 }
 
 func requireBuiltinTool(id string) error {
-	for _, t := range builtinTools {
+	for _, t := range nativeTools() {
 		if t.ID == id {
 			return nil
 		}

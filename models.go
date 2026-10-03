@@ -30,6 +30,8 @@ type AIManifest struct {
 		Path string `json:"path"`
 		SHA  string `json:"sha256"`
 	} `json:"engine_files"`
+	// Apple Silicon runs the bundled model on Metal; other builds stay CPU-only.
+	GPULayers int `json:"gpu_layers"`
 }
 
 var modelMu sync.Mutex
@@ -46,7 +48,7 @@ var modelProcesses = map[string]*modelProcess{}
 
 func aiManifest() (AIManifest, error) {
 	var m AIManifest
-	b, err := assets.ReadFile("catalog/local-ai.json")
+	b, err := platformCatalog("local-ai")
 	if err != nil {
 		return m, err
 	}
@@ -100,7 +102,7 @@ func bundledAI(root string) (bool, string) {
 		return false, "模型运行包与当前系统不匹配"
 	}
 	for _, rel := range []string{m.ModelPath, m.EnginePath} {
-		path, err := writablePath(root, strings.Split(rel, "/")...)
+		path, err := runtimeResourcePath(root, rel)
 		if err != nil {
 			return false, err.Error()
 		}
@@ -149,7 +151,7 @@ func startModel(ctx context.Context, root string, input map[string]any) (any, er
 			return nil, err
 		}
 	}
-	enginePath, err := writablePath(root, strings.Split(m.EnginePath, "/")...)
+	enginePath, err := runtimeResourcePath(root, m.EnginePath)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +179,7 @@ func startModel(ctx context.Context, root string, input map[string]any) (any, er
 	if threads < 1 {
 		threads = 1
 	}
-	cmd := exec.Command(enginePath, "-m", modelPath, "--alias", m.ModelName, "--host", "127.0.0.1", "--port", fmt.Sprint(port), "-c", "4096", "-t", fmt.Sprint(threads), "-ngl", "0", "--jinja", "--reasoning-budget", "0", "--cors-origins", "localhost")
+	cmd := exec.Command(enginePath, "-m", modelPath, "--alias", m.ModelName, "--host", "127.0.0.1", "--port", fmt.Sprint(port), "-c", "4096", "-t", fmt.Sprint(threads), "-ngl", fmt.Sprint(m.GPULayers), "--jinja", "--reasoning-budget", "0", "--cors-origins", "localhost")
 	cmd.Dir = filepath.Dir(enginePath)
 	cmd.Env, err = portableEnv(root)
 	if err != nil {
@@ -197,6 +199,10 @@ func startModel(ctx context.Context, root string, input map[string]any) (any, er
 	}
 	p := &modelProcess{cmd: cmd, done: make(chan struct{}), log: logFile}
 	modelProcesses[root] = p
+	mode := "CPU-only"
+	if m.GPULayers > 0 {
+		mode = "Metal GPU"
+	}
 	modelKeys.Store("bundled", key)
 	modelAddresses.Store("bundled", "http://"+address)
 	go func() {
@@ -220,7 +226,7 @@ func startModel(ctx context.Context, root string, input map[string]any) (any, er
 			if err == nil {
 				for _, s := range rows {
 					if s.Model == m.ModelName {
-						return map[string]any{"ready": true, "model": m.ModelName, "pid": cmd.Process.Pid, "port": port, "backend": "bundled", "mode": "CPU-only", "cloud_requests": 0}, nil
+						return map[string]any{"ready": true, "model": m.ModelName, "pid": cmd.Process.Pid, "port": port, "backend": "bundled", "mode": mode, "cloud_requests": 0}, nil
 					}
 				}
 			}

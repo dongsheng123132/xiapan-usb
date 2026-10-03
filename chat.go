@@ -280,7 +280,7 @@ func runSlash(ctx context.Context, root string, s *ChatSession, message string) 
 		return nil
 	}
 	if cmd == "/救援" || cmd == "/rescue" {
-		addMessage(s, "assistant", "如果电脑无法进入系统，需要从独立的 WinPE 或 Linux 救援环境启动。先备份重要数据，再辨认目标磁盘。当前程序不写引导、不重装；资源页可查看已准备的镜像。格式化成 exFAT 本身不会让 U 盘可启动。")
+		addMessage(s, "assistant", rescueAdvice())
 		return nil
 	}
 	addMessage(s, "assistant", "本盘命令：/启动项 /体检 /网络 /驱动 /工具 /资源 /进程 /模型 /报告 /安装 /救援。它们调用真实维护动作，可在专业模式查看结果。这里不是任意系统命令终端。")

@@ -4,9 +4,9 @@
 
 | 资源 | 本轮版本与来源 | 许可证 |
 | --- | --- | --- |
-| llama.cpp CPU 推理运行时 | [官方 b11146 Windows CPU 包](https://github.com/ggml-org/llama.cpp/releases/tag/b11146) | MIT，全文见 licenses/llama.cpp-MIT.txt |
+| llama.cpp 推理运行时 | [官方 b11146 Windows CPU 包与 macOS 包](https://github.com/ggml-org/llama.cpp/releases/tag/b11146) | MIT，全文见 licenses/llama.cpp-MIT.txt |
 | Qwen3.5-0.8B 模型 | [Qwen 原模型](https://huggingface.co/Qwen/Qwen3.5-0.8B)，[ggml-org 量化文件](https://huggingface.co/ggml-org/Qwen3.5-0.8B-GGUF/tree/8fea620) | Apache 2.0，全文见 licenses/Qwen3.5-Apache-2.0.txt |
-| PicoClaw 可选 Agent | [官方 v0.3.1 Windows 包](https://github.com/sipeed/picoclaw/releases/tag/v0.3.1) | MIT，全文见 licenses/PicoClaw-MIT.txt |
+| PicoClaw 可选 Agent | [官方 v0.3.1 Windows 与 Darwin 包](https://github.com/sipeed/picoclaw/releases/tag/v0.3.1) | MIT，全文见 licenses/PicoClaw-MIT.txt |
 | WinDirStat 可选便携工具 | [官方 2.9.0 便携包](https://github.com/windirstat/windirstat/releases/tag/release/v2.9.0) | GPL-2.0；工具目录保留 LICENSE.md，工具包附对应源码 |
 | PeaZip 可选便携工具 | [官方 11.3.0 WIN64 Portable](https://github.com/peazip/PeaZip/releases/tag/11.3.0) | LGPL-3.0；依赖另按 res/share/copying/third-parties 保留各自声明，工具包附 PeaZip 主项目源码 |
 | Notepad++ | [官方 8.9.8.1 x64 Portable](https://github.com/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.8.1) | GPL-3.0，保留官方 license.txt，附对应主项目源码 |

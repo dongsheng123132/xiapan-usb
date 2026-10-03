@@ -1,11 +1,13 @@
 /* The list is a view of tools.catalog. Execution still uses tools.launch. */
 function renderToolLibrary(data) {
   const root=$('tool-collection');root.replaceChildren();
-  const nativeCategories={'task-manager':'启动与进程','resource-monitor':'启动与进程','disk-cleanup':'磁盘与硬件','device-manager':'磁盘与硬件','system-info':'磁盘与硬件','event-viewer':'启动与进程'};
+  const nativeCategories={'task-manager':'启动与进程','resource-monitor':'启动与进程','disk-cleanup':'磁盘与硬件','device-manager':'磁盘与硬件','system-info':'磁盘与硬件','event-viewer':'启动与进程','activity-monitor':'启动与进程','login-items':'启动与进程','console':'启动与进程','storage-settings':'磁盘与硬件','disk-utility':'磁盘与硬件','system-information':'磁盘与硬件','wireless-diagnostics':'网络与连接'};
+  // Windows-only entries keep their official link but are not offered as this computer's tools.
+  const foreign=t=>system?.os&&system.os!=='windows'&&/windows/i.test(t.platform||'');
   const rows=[
-    ...(data.portable_tools||[]).map(t=>({...t,kind:'portable',status:t.ready?'已内置':'未准备'})),
-    ...(data.builtin_tools||[]).map(t=>({...t,kind:'system',category:nativeCategories[t.id]||'系统工具',status:t.ready?'系统自带':'此系统不可用',portable_note:'由当前电脑的 Windows 提供，不占 U 盘工具包空间。'})),
-    ...(data.library_tools||[]).map(t=>({...t,kind:'download',status:'待下载'})),
+    ...(data.portable_tools||[]).map(t=>({...t,kind:'portable',status:t.ready?'已内置':foreign(t)?'Windows 专用':'未准备'})),
+    ...(data.builtin_tools||[]).map(t=>({...t,kind:'system',category:nativeCategories[t.id]||'系统工具',status:t.ready?'系统自带':'此系统不可用',portable_note:`由${t.source||'当前电脑的系统'}提供，不占 U 盘工具包空间。`})),
+    ...(data.library_tools||[]).map(t=>({...t,kind:'download',status:foreign(t)?'Windows 专用':'待下载'})),
     ...(data.resources||[]).map(t=>({...t,kind:'download',ready:false,status:'需另行准备',category:t.id==='network-driver'?'网络与连接':'启动与救援',reason:t.status,portable_note:t.description}))
   ];
   const intro=el('p',`${rows.filter(t=>t.kind==='portable'&&t.ready).length} 款已内置 · ${rows.filter(t=>t.kind==='system'&&t.ready).length} 项系统工具 · ${rows.filter(t=>t.kind==='download').length} 项选装资源`,'library-summary');
