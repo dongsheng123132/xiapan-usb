@@ -6,7 +6,7 @@ ROOT=Path(__file__).resolve().parent.parent
 parser=argparse.ArgumentParser()
 parser.add_argument('--with-tools',action='store_true',help='Include pinned Windows portable tools and upstream sources')
 args=parser.parse_args()
-name='虾盘 U盘精灵 0.4.3'+('-工具箱' if args.with_tools else '')+'-'+uuid.uuid4().hex[:6]
+name='虾盘 U盘精灵 0.4.4'+('-工具箱' if args.with_tools else '')+'-'+uuid.uuid4().hex[:6]
 target=ROOT/'dist'/name
 target.mkdir()
 (target/'data').mkdir()
@@ -14,7 +14,7 @@ target.mkdir()
 exe=ROOT/'dist/windows-x64/虾盘.exe'
 pico=ROOT/'runtime/picoclaw/windows-x64/picoclaw.exe'
 build_version=subprocess.check_output([str(exe),'version'],timeout=10).decode().strip()
-if build_version!='0.4.3-preview':raise RuntimeError('Build version mismatch')
+if build_version!='0.4.4-preview':raise RuntimeError('Build version mismatch')
 manifest=json.loads((ROOT/'catalog/picoclaw.json').read_text(encoding='utf-8'))
 digest=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
 if digest(pico)!=manifest['sha256']:raise RuntimeError('PicoClaw hash mismatch')

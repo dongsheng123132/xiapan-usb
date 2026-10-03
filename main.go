@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-const version = "0.4.3-preview"
+const version = "0.4.4-preview"
 
 //go:embed web/* skills/*/SKILL.md catalog/*.json
 var assets embed.FS
@@ -65,6 +65,7 @@ var actions = []Action{
 	{"chat.confirm", "确认维护操作", "执行此对话中明确展示的操作", true},
 	{"processes.inspect", "查看进程", "只读获取进程名称与内存，不读取命令行", false},
 	{"network.diagnose", "网络诊断", "检查网卡、DNS 与云端连通性，不改配置", false},
+	{"network.rescue", "断网急救诊断", "分层检查网卡、网关、DNS、网页与代理，给出病因和下一步要打开的系统工具，不改配置", false},
 	{"drivers.inspect", "网络设备与驱动", "离线读取网卡硬件 ID、驱动与故障码，查看盘内驱动", false},
 	{"tools.catalog", "维护工具集合", "查看系统工具与官方资源的真实准备状态", false},
 	{"tools.launch", "打开维护工具", "打开系统或已校验的本盘便携工具，不自动清理或安装驱动", true},
@@ -100,6 +101,8 @@ func runAction(ctx context.Context, root, id string, input map[string]any) Resul
 		data, err = inspectProcesses(ctx, root)
 	case "network.diagnose":
 		data, err = diagnoseNetwork(ctx)
+	case "network.rescue":
+		data, err = networkRescue(ctx, root)
 	case "drivers.inspect":
 		data, err = inspectDrivers(ctx, root)
 	case "tools.catalog":

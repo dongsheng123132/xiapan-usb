@@ -1,7 +1,7 @@
 /* The list is a view of tools.catalog. Execution still uses tools.launch. */
 function renderToolLibrary(data) {
   const root=$('tool-collection');root.replaceChildren();
-  const nativeCategories={'task-manager':'启动与进程','resource-monitor':'启动与进程','disk-cleanup':'磁盘与硬件','device-manager':'磁盘与硬件','system-info':'磁盘与硬件','event-viewer':'启动与进程','activity-monitor':'启动与进程','login-items':'启动与进程','console':'启动与进程','storage-settings':'磁盘与硬件','disk-utility':'磁盘与硬件','system-information':'磁盘与硬件','wireless-diagnostics':'网络与连接'};
+  const nativeCategories={'task-manager':'启动与进程','resource-monitor':'启动与进程','disk-cleanup':'磁盘与硬件','device-manager':'磁盘与硬件','system-info':'磁盘与硬件','event-viewer':'启动与进程','activity-monitor':'启动与进程','login-items':'启动与进程','console':'启动与进程','storage-settings':'磁盘与硬件','disk-utility':'磁盘与硬件','system-information':'磁盘与硬件','wireless-diagnostics':'网络与连接','network-settings':'网络与连接'};
   // Windows-only entries keep their official link but are not offered as this computer's tools.
   const foreign=t=>system?.os&&system.os!=='windows'&&/windows/i.test(t.platform||'');
   const rows=[
