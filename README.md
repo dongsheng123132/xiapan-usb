@@ -1,5 +1,7 @@
 # 虾盘 · U 盘精灵
 
+> **2026-10-03：开发已迁移至公开源码仓库 [dongsheng123132/xiapan-usb](https://github.com/dongsheng123132/xiapan-usb)。** 本机新源码工作目录为 `public-source/xiapan-usb/`，Mac/Linux 请 clone 同一公开仓库。本目录保留迁移前历史和私有实盘验收记录；后续功能不要在两份源码中分别实现。详情见 [开源交接](docs/开源交接-20261003.md)。
+
 0.4.2-preview。沿用 U-Claw / ClawX 的便携逻辑：一个启动入口，模型设置、密钥与对话随盘保存。PicoClaw 负责一般问答和维护工具调用；可以使用虾盘云，也可以在页面中设置自己的 OpenAI 兼容 API。浏览器界面默认只显示对话，历史按需展开。Go 动作核心同时供 GUI、CLI 与 PicoClaw MCP 调用。
 
 ## 使用
