@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-const version = "0.4.1-preview"
+const version = "0.4.2-preview"
 
 //go:embed web/* skills/*/SKILL.md catalog/*.json
 var assets embed.FS

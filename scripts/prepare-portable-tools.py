@@ -1,4 +1,5 @@
-"""Prepare pinned upstream portable tools. Never install into the host OS."""
+"""Prepare catalog/tool-packages.json into a fresh, reproducible portable library."""
+import fnmatch
 import hashlib
 import json
 from pathlib import Path
@@ -8,19 +9,27 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parent.parent
 CACHE = ROOT / '.cache/portable-tool-downloads'
-DEST = ROOT / 'runtime/tools/windows-x64'
-SOURCES = ROOT / 'runtime/tool-sources'
-ASSETS = {
-    'WinDirStat.zip': ('https://github.com/windirstat/windirstat/releases/download/release/v2.9.0/WinDirStat.zip', '0d04d9f716b70502658595956ac3af5192f591c6d2636662eea170655546b891'),
-    'WinDirStat-2.9.0-source.zip': ('https://api.github.com/repos/windirstat/windirstat/zipball/release/v2.9.0', '8818e4d402e64466f3e6d7cd5c89301f67048d62b89120044f49be8fb42f072b'),
-    'peazip_portable-11.3.0.WIN64.zip': ('https://github.com/peazip/PeaZip/releases/download/11.3.0/peazip_portable-11.3.0.WIN64.zip', '3fb15b9852c94ba5ee8d1af5568fad0cad0999854225b4432b9c98b315a4f768'),
-    'peazip-11.3.0.src.zip': ('https://github.com/peazip/PeaZip/releases/download/11.3.0/peazip-11.3.0.src.zip', '17e85e62a3b526a03347186465ff4a79f8117311e9efe0c432e968bd98e612cb'),
-}
+DEST = ROOT / 'runtime/tool-library/windows-x64'
+SOURCES = ROOT / 'runtime/tool-library/sources'
 
 
 def digest(path):
     with path.open('rb') as stream:
         return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+
+def fetch(asset):
+    path = CACHE / asset['filename']
+    assert path.parent == CACHE and path.name == asset['filename']
+    if not path.exists():
+        req = urllib.request.Request(asset['url'], headers={'User-Agent': 'Xiapan-portable-tools'})
+        with urllib.request.urlopen(req, timeout=45) as response:
+            body = response.read(100 * 1024 * 1024 + 1)
+        assert len(body) <= 100 * 1024 * 1024
+        assert hashlib.sha256(body).hexdigest() == asset['sha256']
+        path.write_bytes(body)
+    assert digest(path) == asset['sha256'], asset['filename']
+    return path
 
 
 def extract(archive, target, prefix):
@@ -29,8 +38,7 @@ def extract(archive, target, prefix):
         for item in z.infolist():
             if not item.filename.startswith(prefix) or item.is_dir():
                 continue
-            relative = item.filename[len(prefix):]
-            path = (target / relative).resolve()
+            path = (target / item.filename[len(prefix):]).resolve()
             assert path.is_relative_to(target.resolve()) and path != target.resolve()
             assert (item.external_attr >> 16) & 0o170000 != 0o120000
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -39,46 +47,46 @@ def extract(archive, target, prefix):
 
 
 def main():
+    specs = json.loads((ROOT / 'catalog/tool-packages.json').read_text(encoding='utf-8'))
     CACHE.mkdir(parents=True, exist_ok=True)
     if DEST.exists() or SOURCES.exists():
-        raise SystemExit('Prepared directory already exists; use a fresh staging directory, never overwrite tool preferences.')
-    for name, (url, expected) in ASSETS.items():
-        path = CACHE / name
-        if not path.exists():
-            request = urllib.request.Request(url, headers={'User-Agent': 'Xiapan-portable-tools'})
-            with urllib.request.urlopen(request, timeout=45) as response:
-                content = response.read(100 * 1024 * 1024 + 1)
-            assert len(content) <= 100 * 1024 * 1024 and hashlib.sha256(content).hexdigest() == expected
-            path.write_bytes(content)
-        assert digest(path) == expected, name
+        raise SystemExit('Use fresh staging; refusing to overwrite existing portable preferences.')
+    for spec in specs:
+        for asset in [spec['archive'], *spec.get('extra_files', []), *([spec['source_archive']] if 'source_archive' in spec else [])]:
+            fetch(asset)
     DEST.mkdir(parents=True)
     SOURCES.mkdir(parents=True)
-    extract(CACHE / 'WinDirStat.zip', DEST / 'windirstat', 'x64/')
-    # Upstream checks for this file before loading settings; absent means registry.
-    (DEST / 'windirstat/WinDirStat.ini').write_text('', encoding='utf-8')
-    with zipfile.ZipFile(CACHE / 'WinDirStat-2.9.0-source.zip') as z:
-        license_name = next(n for n in z.namelist() if n.endswith('/LICENSE.md'))
-        (DEST / 'windirstat/LICENSE.md').write_bytes(z.read(license_name))
-    extract(CACHE / 'peazip_portable-11.3.0.WIN64.zip', DEST / 'peazip', 'peazip_portable-11.3.0.WIN64/')
-    for name in ('WinDirStat-2.9.0-source.zip', 'peazip-11.3.0.src.zip'):
-        shutil.copy2(CACHE / name, SOURCES / name)
     rows = []
-    for tool_id, name, version, executable, license_name, url in (
-        ('windirstat', 'WinDirStat 磁盘空间分析', '2.9.0', 'WinDirStat.exe', 'GPL-2.0', 'https://github.com/windirstat/windirstat'),
-        ('peazip', 'PeaZip 压缩与解压', '11.3.0', 'peazip.exe', 'LGPL-3.0 / bundled component notices', 'https://github.com/peazip/PeaZip'),
-    ):
-        directory = DEST / tool_id
-        files = {}
-        for path in sorted(directory.rglob('*')):
-            relative = path.relative_to(directory).as_posix()
-            if path.is_file() and relative != 'WinDirStat.ini' and not relative.startswith('res/conf/'):
-                files[relative] = digest(path)
-        rows.append({'id': tool_id, 'name': name, 'version': version, 'platform': 'windows/amd64',
-                     'directory': 'app/tools/windows-x64/' + tool_id, 'executable': executable,
-                     'license': license_name, 'official_url': url, 'files': files})
+    for spec in specs:
+        directory = DEST / spec['id']
+        extract(fetch(spec['archive']), directory, spec.get('prefix', ''))
+        for name, body in spec.get('init_files', {}).items():
+            path = (directory / name).resolve()
+            assert path.is_relative_to(directory.resolve())
+            path.parent.mkdir(parents=True, exist_ok=True)
+            if not path.exists():
+                path.write_text(body, encoding='utf-8')
+        for asset in spec.get('extra_files', []):
+            shutil.copy2(fetch(asset), directory / asset['filename'])
+        if 'source_archive' in spec:
+            source = fetch(spec['source_archive'])
+            shutil.copy2(source, SOURCES / source.name)
+            with zipfile.ZipFile(source) as z:
+                for name in spec.get('license_from_source', []):
+                    member = next(n for n in z.namelist() if n.count('/') == 1 and n.endswith('/' + name))
+                    (directory / name).write_bytes(z.read(member))
+        assert (directory / spec['executable']).is_file()
+        row = {k: spec[k] for k in ('id', 'name', 'version', 'platform', 'executable', 'category',
+                                   'description', 'license', 'official_url', 'portable_note', 'init_files', 'args')}
+        row['directory'] = 'app/tools/windows-x64/' + spec['id']
+        row['files'] = {p.relative_to(directory).as_posix(): digest(p) for p in sorted(directory.rglob('*'))
+                        if p.is_file() and not any(fnmatch.fnmatchcase(p.relative_to(directory).as_posix(), pat)
+                                                  for pat in spec['mutable'])}
+        row['bytes'] = sum(p.stat().st_size for p in directory.rglob('*') if p.is_file())
+        rows.append(row)
     (ROOT / 'catalog/portable-tools.json').write_text(json.dumps(rows, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-    (SOURCES / 'UPSTREAM.json').write_text(json.dumps(ASSETS, ensure_ascii=False, indent=2), encoding='utf-8')
-    print(json.dumps({'prepared': [r['name'] for r in rows], 'bytes': sum(p.stat().st_size for p in DEST.rglob('*') if p.is_file())}, ensure_ascii=False))
+    (SOURCES / 'UPSTREAM.json').write_text(json.dumps(specs, ensure_ascii=False, indent=2), encoding='utf-8')
+    print(json.dumps({'prepared': [r['name'] for r in rows], 'bytes': sum(r['bytes'] for r in rows)}, ensure_ascii=False))
 
 
 if __name__ == '__main__':

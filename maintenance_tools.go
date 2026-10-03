@@ -90,6 +90,14 @@ func toolCatalog(root string) (any, error) {
 	if err = json.Unmarshal(b, &resources); err != nil {
 		return nil, err
 	}
+	var library []map[string]any
+	b, err = assets.ReadFile("catalog/tool-library.json")
+	if err != nil {
+		return nil, err
+	}
+	if err = json.Unmarshal(b, &library); err != nil {
+		return nil, err
+	}
 	// A discovered filename does not imply a validated, licensed installer.
 	scan, err := scanResources(root)
 	if err != nil {
@@ -99,7 +107,7 @@ func toolCatalog(root string) (any, error) {
 	for _, f := range scan.Files {
 		counts[f.Kind]++
 	}
-	return map[string]any{"builtin_tools": rows, "portable_tools": portableToolRows(root), "resources": resources, "resource_counts": counts, "note": "系统工具来自当前电脑；便携工具从本盘启动并校验固定文件。这里只打开工具，文件整理或清理需在工具中自行操作。"}, nil
+	return map[string]any{"builtin_tools": rows, "portable_tools": portableToolRows(root), "library_tools": library, "resources": resources, "resource_counts": counts, "note": "已内置的便携工具可离线打开；扩展清单提供官方入口，未下载的不会显示为已内置。"}, nil
 }
 func launchTool(ctx context.Context, id string, confirmed bool) (any, error) {
 	if !confirmed {

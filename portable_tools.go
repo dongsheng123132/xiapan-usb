@@ -16,15 +16,21 @@ import (
 )
 
 type PortableTool struct {
-	ID          string            `json:"id"`
-	Name        string            `json:"name"`
-	Version     string            `json:"version"`
-	Platform    string            `json:"platform"`
-	Directory   string            `json:"directory"`
-	Executable  string            `json:"executable"`
-	License     string            `json:"license"`
-	OfficialURL string            `json:"official_url"`
-	Files       map[string]string `json:"files"`
+	ID           string            `json:"id"`
+	Name         string            `json:"name"`
+	Version      string            `json:"version"`
+	Platform     string            `json:"platform"`
+	Directory    string            `json:"directory"`
+	Executable   string            `json:"executable"`
+	License      string            `json:"license"`
+	OfficialURL  string            `json:"official_url"`
+	Files        map[string]string `json:"files"`
+	Category     string            `json:"category"`
+	Description  string            `json:"description"`
+	PortableNote string            `json:"portable_note"`
+	Bytes        int64             `json:"bytes"`
+	InitFiles    map[string]string `json:"init_files"`
+	Args         []string          `json:"args"`
 }
 
 func portableTools() []PortableTool {
@@ -87,6 +93,7 @@ func portableToolRows(root string) []any {
 		}
 		rows = append(rows, map[string]any{"id": tool.ID, "name": tool.Name, "version": tool.Version,
 			"ready": ready, "source": "本盘便携工具", "platform": tool.Platform,
+			"category": tool.Category, "description": tool.Description, "portable_note": tool.PortableNote, "bytes": tool.Bytes,
 			"license": tool.License, "official_url": tool.OfficialURL, "action": "tools.launch"})
 	}
 	return rows
@@ -104,20 +111,27 @@ func launchRegisteredTool(ctx context.Context, root, id string, confirmed bool) 
 		if err != nil {
 			return nil, err
 		}
-		if tool.ID == "windirstat" {
-			// The upstream app reads the registry unless its adjacent ini exists.
-			ini, pathErr := portableToolPath(root, tool, "WinDirStat.ini")
+		for name, body := range tool.InitFiles {
+			// Trusted defaults enable upstream portable mode; never overwrite preferences.
+			ini, pathErr := portableToolPath(root, tool, name)
 			if pathErr != nil {
 				return nil, pathErr
 			}
-			f, openErr := os.OpenFile(ini, os.O_CREATE|os.O_RDWR, 0600)
+			f, openErr := os.OpenFile(ini, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+			if errors.Is(openErr, os.ErrExist) {
+				continue
+			}
 			if openErr != nil {
 				return nil, errors.New("无法启用随盘配置；未启动工具")
 			}
-			f.Close()
+			_, writeErr := f.WriteString(body)
+			closeErr := f.Close()
+			if writeErr != nil || closeErr != nil {
+				return nil, errors.New("无法保存随盘配置；未启动工具")
+			}
 		}
-		// Only pinned GUI entrypoints are allowed, with no model-supplied arguments.
-		cmd := exec.Command(program)
+		// Entrypoints and optional arguments come only from the embedded trusted manifest.
+		cmd := exec.Command(program, tool.Args...)
 		cmd.Dir = filepath.Dir(program)
 		cmd.Env, err = portableEnv(root)
 		if err != nil {
@@ -127,7 +141,14 @@ func launchRegisteredTool(ctx context.Context, root, id string, confirmed bool) 
 			return nil, ctx.Err()
 		}
 		if err = cmd.Start(); err != nil {
-			return nil, fmt.Errorf("打开 %s 失败：%w", tool.Name, err)
+			// Only a Windows elevation-required error can enter the existing UAC path.
+			pid, launchErr := launchElevatedTool(ctx, program, tool.Args, err)
+			if launchErr != nil {
+				return nil, fmt.Errorf("打开 %s 失败：%w", tool.Name, launchErr)
+			}
+			return map[string]any{"tool_id": id, "name": tool.Name, "pid": pid, "verified": true,
+				"launch_requested": true, "maintenance_performed": false, "elevated": true,
+				"note": "Windows 已接受工具启动请求，后续操作由你在工具中完成。"}, nil
 		}
 		pid := cmd.Process.Pid
 		go cmd.Wait()
