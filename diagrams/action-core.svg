@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 280" role="img" aria-labelledby="title desc">
+  <title id="title">One maintenance core, three ways to use it</title>
+  <desc id="desc">Browser, command line and optional AI call the same Go action core. It checks permissions and confirmation, then runs supported system actions and verified portable tools. Settings and reports stay on the drive.</desc>
+  <defs><marker id="arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0L7 3.5L0 7" fill="#7d9d90"/></marker></defs>
+  <rect width="1120" height="280" rx="16" fill="#10211b"/>
+  <g font-family="Inter,Segoe UI,Arial,sans-serif" text-anchor="middle">
+    <g fill="#1b342a" stroke="#466252"><rect x="32" y="30" width="194" height="53" rx="10"/><rect x="32" y="113" width="194" height="53" rx="10"/><rect x="32" y="196" width="194" height="53" rx="10"/></g>
+    <g fill="#dcebdd" font-size="16"><text x="129" y="63">Browser UI</text><text x="129" y="146">CLI</text><text x="129" y="229">Optional AI · MCP</text></g>
+    <path d="M226 57H278V223H226M226 140H320" fill="none" stroke="#7d9d90" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="328" y="63" width="330" height="154" rx="14" fill="#263e29" stroke="#b3df8b" stroke-width="2"/>
+    <text x="493" y="102" fill="#d0efa4" font-size="22" font-weight="700">Go action core</text>
+    <text x="493" y="134" fill="#b6cab6" font-size="14">Permissions · confirmation · checksums</text>
+    <text x="493" y="163" fill="#b6cab6" font-size="14">Structured results · reports</text>
+    <text x="493" y="193" fill="#91aa94" font-size="12">One implementation across every interface</text>
+    <path d="M658 140H702M702 59V222" fill="none" stroke="#7d9d90" stroke-width="2"/>
+    <g fill="none" stroke="#7d9d90" stroke-width="2" marker-end="url(#arrow)"><path d="M702 59H744"/><path d="M702 140H744"/><path d="M702 222H744"/></g>
+    <g fill="#192f29" stroke="#466252"><rect x="752" y="31" width="334" height="56" rx="10"/><rect x="752" y="112" width="334" height="56" rx="10"/><rect x="752" y="194" width="334" height="56" rx="10"/></g>
+    <g fill="#dcebdd" font-size="16"><text x="919" y="66">Supported system actions</text><text x="919" y="147">Verified portable utilities</text><text x="919" y="229">Settings &amp; reports on your drive</text></g>
+  </g>
+</svg>
