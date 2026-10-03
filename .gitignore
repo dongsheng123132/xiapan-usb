@@ -1,0 +1,17 @@
+/.cache/
+/dist/
+/data/
+/models/
+/packages/
+/images/
+/drivers/
+/runtime/
+/evidence/
+.env
+.env.*
+!.env.example
+*.exe
+*.gguf
+*.iso
+.DS_Store
+__pycache__/
