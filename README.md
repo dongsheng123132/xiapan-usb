@@ -8,6 +8,8 @@
 
 **Portable PC maintenance tools, with optional AI.**
 
+**Download and run (Windows x64):** [Product page](https://usb.u-claw.org.cn/) · [Release v0.4.4-preview](https://github.com/dongsheng123132/xiapan-usb/releases/tag/v0.4.4-preview).
+
 ![Preview](https://img.shields.io/badge/version-0.4.4%20preview-8b6b33)
 ![Go](https://img.shields.io/badge/Go-1.24%2B-367a8d)
 ![License](https://img.shields.io/badge/license-MIT-527c46)

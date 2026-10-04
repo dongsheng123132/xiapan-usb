@@ -1,4 +1,4 @@
-$ErrorActionPreference='Stop'
+﻿$ErrorActionPreference='Stop'
 $projectRoot=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $archive=Join-Path $projectRoot '.cache/picoclaw-0.3.1.zip'
 New-Item -ItemType Directory -Path (Split-Path -Parent $archive) -Force|Out-Null

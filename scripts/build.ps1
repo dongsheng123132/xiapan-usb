@@ -1,4 +1,4 @@
-$ErrorActionPreference='Stop'
+﻿$ErrorActionPreference='Stop'
 $projectRoot=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $env:GOCACHE=Join-Path $projectRoot '.cache\go-build'
 $env:GOMODCACHE=Join-Path $projectRoot '.cache\go-mod'
