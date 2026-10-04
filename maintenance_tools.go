@@ -35,21 +35,13 @@ var builtinTools = []BuiltinTool{
 
 func builtinToolIDs() []string {
 	ids := []string{}
-	for _, t := range nativeTools() {
-		ids = append(ids, t.ID)
-	}
-	for _, t := range portableTools() {
+	for _, t := range builtinTools {
 		ids = append(ids, t.ID)
 	}
 	return ids
 }
 func builtinToolName(id string) string {
-	for _, t := range portableTools() {
-		if t.ID == id {
-			return t.Name
-		}
-	}
-	for _, t := range nativeTools() {
+	for _, t := range builtinTools {
 		if t.ID == id {
 			return t.Name
 		}
@@ -57,17 +49,6 @@ func builtinToolName(id string) string {
 	return id
 }
 func builtinCommand(t BuiltinTool) (string, []string, bool) {
-	if runtime.GOOS == "darwin" {
-		// LaunchServices opens the fixed Apple bundle or settings pane.
-		info, err := os.Stat(t.Program)
-		if err != nil || !info.IsDir() {
-			return "", nil, false
-		}
-		if len(t.Args) > 0 {
-			return "/usr/bin/open", append([]string{}, t.Args...), true
-		}
-		return "/usr/bin/open", []string{t.Program}, true
-	}
 	if runtime.GOOS != "windows" {
 		return "", nil, false
 	}
@@ -94,36 +75,11 @@ func builtinCommand(t BuiltinTool) (string, []string, bool) {
 }
 func toolCatalog(root string) (any, error) {
 	rows := []any{}
-	for _, t := range nativeTools() {
+	for _, t := range builtinTools {
 		_, _, ready := builtinCommand(t)
-		rows = append(rows, map[string]any{"id": t.ID, "name": t.Name, "description": t.Description, "ready": ready, "source": "当前 " + osLabel(runtime.GOOS) + " 系统", "platform": runtime.GOOS, "action": "tools.launch"})
+		rows = append(rows, map[string]any{"id": t.ID, "name": t.Name, "description": t.Description, "ready": ready, "source": "当前 Windows 系统", "platform": runtime.GOOS, "action": "tools.launch"})
 	}
-	b, err := assets.ReadFile("catalog/maintenance.json")
-	if err != nil {
-		return nil, err
-	}
-	var resources []map[string]any
-	if err = json.Unmarshal(b, &resources); err != nil {
-		return nil, err
-	}
-	var library []map[string]any
-	b, err = assets.ReadFile("catalog/tool-library.json")
-	if err != nil {
-		return nil, err
-	}
-	if err = json.Unmarshal(b, &library); err != nil {
-		return nil, err
-	}
-	// A discovered filename does not imply a validated, licensed installer.
-	scan, err := scanResources(root)
-	if err != nil {
-		return nil, err
-	}
-	counts := map[string]int{}
-	for _, f := range scan.Files {
-		counts[f.Kind]++
-	}
-	return map[string]any{"builtin_tools": rows, "portable_tools": portableToolRows(root), "library_tools": library, "resources": resources, "resource_counts": counts, "note": "已内置的便携工具可离线打开；扩展清单提供官方入口，未下载的不会显示为已内置。"}, nil
+	return map[string]any{"builtin_tools": rows, "note": "仅打开 Windows 自带工具；后续操作由网管在工具中完成。"}, nil
 }
 func launchTool(ctx context.Context, id string, confirmed bool) (any, error) {
 	if !confirmed {
@@ -132,7 +88,7 @@ func launchTool(ctx context.Context, id string, confirmed bool) (any, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
-	for _, t := range nativeTools() {
+	for _, t := range builtinTools {
 		if t.ID != id {
 			continue
 		}
@@ -158,31 +114,11 @@ func launchTool(ctx context.Context, id string, confirmed bool) (any, error) {
 }
 
 func inspectDrivers(ctx context.Context, root string) (any, error) {
-	scan, err := scanResources(root)
-	if err != nil {
-		return nil, err
-	}
-	files := []Resource{}
-	for _, f := range scan.Files {
-		if f.Kind == "drivers" {
-			files = append(files, f)
-		}
-	}
-	out := map[string]any{"platform": runtime.GOOS, "devices": []any{}, "offline_files": files, "offline_truncated": scan.Truncated, "scan_warnings": scan.Warnings, "internet_required": false, "driver_install_supported": false,
-		"next_steps": []string{"先看设备故障码与硬件 ID，缺驱动不能只按文件名猜。", "可尝试有线网络或手机 USB 共享网络；手机也可能需要驱动。", "在有网电脑从整机或网卡厂商官网下载对应系统/架构的驱动，保留安装包和校验值，放到 drivers/<系统-架构>/<厂商-型号>/。", "驱动安装会改变系统，应确认匹配、备份并保留回滚方式，再到设备管理器操作。"}}
-	if runtime.GOOS == "darwin" {
-		out["devices"] = macNetworkDevices(ctx)
-		out["next_steps"] = []string{"先确认网络端口是否出现、是否已连接；Wi-Fi 问题可打开无线诊断。", "Mac 的网卡驱动随系统提供，一般不需要离线驱动包；第三方 USB 网卡按厂商说明安装并在系统设置中允许。", "可尝试有线网络或手机 USB 共享网络。", "系统扩展或驱动的安装会改变系统，应确认来源并保留卸载方式。"}
-		out["note"] = "读取 macOS 网络端口与网卡地址；macOS 不提供 Windows 式的驱动故障码。离线文件仅为库存，不自动安装。"
-		n, _ := inspectNetwork()
-		out["interfaces"] = n
-		return out, nil
-	}
+	var err error
+	out := map[string]any{"platform": runtime.GOOS, "devices": []any{}, "internet_required": false, "driver_install_supported": false,
+		"next_steps": []string{"根据故障码与硬件 ID 核对公司批准的驱动；不自动下载或安装。"}}
 	if runtime.GOOS != "windows" {
-		out["note"] = "此平台暂提供网卡信息与离线驱动库存，尚未实现硬件 ID 和驱动故障码读取。"
-		n, _ := inspectNetwork()
-		out["interfaces"] = n
-		return out, nil
+		return nil, errors.New("仅支持 Windows 网络设备读取")
 	}
 	// Include unknown devices with code 28: an uninstalled network controller
 	// may not yet have class Net. Unknown devices are not labelled as NICs.

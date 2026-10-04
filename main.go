@@ -16,14 +16,13 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"os/signal"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
 )
 
-const version = "0.4.4-preview"
+const version = "0.5.0-preview"
 
 //go:embed web/* skills/*/SKILL.md catalog/*.json
 var assets embed.FS
@@ -46,37 +45,22 @@ var actions = []Action{
 	{"settings.ui.get", "界面语言", "读取随盘保存的界面语言", false},
 	{"settings.ui.save", "保存界面语言", "保存中英文选择，不修改模型或对话", true},
 	{"settings.model.get", "模型设置", "读取本盘模型选择，不返回密钥", false},
-	{"settings.model.save", "保存模型设置", "保存自带 API 或虾盘云选择到本盘", true},
+	{"settings.model.save", "保存模型设置", "保存公司提供的 API 设置到本盘", true},
 	{"settings.model.test", "测试模型连接", "发送一次工具调用测试，不保存设置", false},
 	{"startup.inspect", "查看启动项", "读取常见 Windows 启动项及启用状态，不修改", false},
-	{"wallet.ensure", "设备钱包", "联网自动取得钱包；失败不阻塞维护工具", true},
-	{"wallet.refresh", "刷新余额", "只读查询当前钱包余额", false},
-	{"wallet.adopt", "填入已有钱包", "验证并使用已有凭证，不搬动余额", true},
-	{"wallet.copy", "备份钱包凭证", "用户主动复制当前钱包凭证", false},
-	{"wallet.rotate", "换一把密钥", "两阶段轮换；需要明确确认", true},
-	{"wallet.reset", "移除本盘钱包", "只清本盘状态，不删除服务端钱包", true},
-	{"wallet.recharge", "一键充值", "打开当前钱包的官方充值页，不付款", false},
-	{"cloud.models", "虾盘云模型", "从服务端读取可用模型", false},
 	{"chat.start", "新对话", "创建本盘维护对话", true},
 	{"chat.list", "对话记录", "读取本盘维护对话", false},
 	{"chat.read", "继续对话", "读取指定维护对话", false},
 	{"chat.progress", "处理进度", "读取当前对话的实际动作结果", false},
-	{"chat.send", "AI 维护对话", "云端或本地对话，调用受控维护动作", true},
+	{"chat.send", "AI 维护对话", "使用公司 API 分析证据，调用受控维护动作", true},
 	{"chat.confirm", "确认维护操作", "执行此对话中明确展示的操作", true},
 	{"processes.inspect", "查看进程", "只读获取进程名称与内存，不读取命令行", false},
-	{"network.diagnose", "网络诊断", "检查网卡、DNS 与云端连通性，不改配置", false},
 	{"network.rescue", "断网急救诊断", "分层检查网卡、网关、DNS、网页与代理，给出病因和下一步要打开的系统工具，不改配置", false},
-	{"drivers.inspect", "网络设备与驱动", "离线读取网卡硬件 ID、驱动与故障码，查看盘内驱动", false},
-	{"tools.catalog", "维护工具集合", "查看系统工具与官方资源的真实准备状态", false},
-	{"tools.launch", "打开维护工具", "打开系统或已校验的本盘便携工具，不自动清理或安装驱动", true},
+	{"drivers.inspect", "网络设备与驱动", "离线读取网卡硬件 ID、驱动与故障码", false},
+	{"tools.catalog", "维护工具集合", "查看Windows 系统工具的真实准备状态", false},
+	{"tools.launch", "打开维护工具", "打开已注册的 Windows 系统工具，不自动清理或安装驱动", true},
 	{"system.inspect", "电脑体检", "读取系统、内存与磁盘信息", false},
 	{"network.inspect", "网络检查", "读取本机网络接口，不更改网络配置", false},
-	{"resources.scan", "查看盘内资源", "查看软件、模型、镜像和驱动，不执行发现的文件", false},
-	{"models.inspect", "本地模型检查", "检查盘内模型与本机本地推理服务", false},
-	{"models.start", "启动本盘离线 AI", "校验内置资源，以 CPU 在本机启动模型，不访问云端", true},
-	{"models.stop", "停止本盘模型", "仅停止本程序在此目录启动的模型", true},
-	{"maintenance.plan", "生成维护方案", "根据需求给出步骤；本地模型未连接时使用明确标注的维护向导", false},
-	{"tools.install", "安装便携体检工具", "校验并安装内置体检工具到本盘 data/tools，不改本机软件", true},
 	{"report.create", "保存体检报告", "原子保存到本盘 data/reports，生成新的报告", true},
 	{"reports.list", "查看维护记录", "读取本盘生成的报告", false},
 }
@@ -91,16 +75,10 @@ func runAction(ctx context.Context, root, id string, input map[string]any) Resul
 		data, err = modelSettingsAction(ctx, root, id, input)
 	case "startup.inspect":
 		data, err = inspectStartup(ctx, root)
-	case "wallet.ensure", "wallet.refresh", "wallet.adopt", "wallet.copy", "wallet.rotate", "wallet.reset", "wallet.recharge":
-		data, err = walletAction(ctx, root, id, input)
-	case "cloud.models":
-		data, err = cloudModels(ctx, root)
 	case "chat.start", "chat.list", "chat.read", "chat.progress", "chat.send", "chat.confirm":
 		data, err = chatAction(ctx, root, id, input)
 	case "processes.inspect":
 		data, err = inspectProcesses(ctx, root)
-	case "network.diagnose":
-		data, err = diagnoseNetwork(ctx)
 	case "network.rescue":
 		data, err = networkRescue(ctx, root)
 	case "drivers.inspect":
@@ -108,29 +86,13 @@ func runAction(ctx context.Context, root, id string, input map[string]any) Resul
 	case "tools.catalog":
 		data, err = toolCatalog(root)
 	case "tools.launch":
-		data, err = launchRegisteredTool(ctx, root, str(input, "tool_id"), input["confirmed"] == true)
+		data, err = launchTool(ctx, str(input, "tool_id"), input["confirmed"] == true)
 	case "system.inspect":
 		data, err = inspectSystem(root)
 	case "network.inspect":
 		data, err = inspectNetwork()
-	case "resources.scan":
-		data, err = scanResources(root)
-	case "models.inspect":
-		data, err = inspectModels(ctx, root)
-	case "models.start":
-		data, err = startModel(ctx, root, input)
-	case "models.stop":
-		data, err = stopModel(root)
-	case "maintenance.plan":
-		data, err = maintenancePlan(ctx, root, input)
-	case "tools.install":
-		if input["confirmed"] != true {
-			err = errors.New("请先确认安装到本盘，操作不会修改电脑的软件配置")
-		} else {
-			data, err = installTool(ctx, root, str(input, "package_id"))
-		}
 	case "report.create":
-		data, err = createReport(root)
+		data, err = createReport(root, input)
 	case "reports.list":
 		data, err = listReports(root)
 	default:
@@ -145,20 +107,11 @@ func runAction(ctx context.Context, root, id string, input map[string]any) Resul
 func str(input map[string]any, key string) string { s, _ := input[key].(string); return s }
 
 func main() {
-	defer stopAllModels()
-	args := withoutProcessSerial(os.Args[1:])
-	if len(args) == 0 && runtime.GOOS == "darwin" {
-		if exe, err := os.Executable(); err == nil {
-			if _, inBundle := bundleRoot(filepath.Dir(exe)); inBundle {
-				if err = launchBundle(exe); err != nil {
-					fmt.Fprintln(os.Stderr, err)
-					alertUser("虾盘无法启动", err.Error())
-					os.Exit(1)
-				}
-				return
-			}
-		}
+	if runtime.GOOS != "windows" || runtime.GOARCH != "amd64" {
+		fmt.Fprintln(os.Stderr, "网管精简版仅支持 Windows x64")
+		os.Exit(1)
 	}
+	args := os.Args[1:]
 	if len(args) > 0 && (args[0] == "version" || args[0] == "--version") {
 		fmt.Println(version)
 		return
@@ -207,14 +160,7 @@ func resolveRoot(root string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		if strings.Contains(exe, "/AppTranslocation/") {
-			origin, ok := translocatedOrigin(exe)
-			if !ok {
-				return "", errors.New(translocationHelp)
-			}
-			exe = origin
-		}
-		root, _ = bundleRoot(filepath.Dir(exe))
+		root = filepath.Dir(exe)
 	}
 	abs, err := filepath.Abs(root)
 	if err != nil {
@@ -277,12 +223,7 @@ func actionCLI(args []string) {
 	if !r.OK {
 		os.Exit(1)
 	}
-	if id == "models.start" {
-		fmt.Fprintln(os.Stderr, "本地模型运行中；终止本进程会停止本次模型服务。")
-		signals := make(chan os.Signal, 1)
-		signal.Notify(signals, os.Interrupt)
-		<-signals
-	}
+
 }
 
 func newServer(root, base string) (*http.Server, error) {
@@ -305,7 +246,6 @@ func newServer(root, base string) (*http.Server, error) {
 		}
 		writeJSON(w, Result{OK: true, Action: "app.quit"})
 		go func() {
-			stopAllModels()
 			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 			defer cancel()
 			server.Shutdown(ctx)
@@ -407,15 +347,7 @@ func writeJSON(w http.ResponseWriter, v any) {
 }
 
 func openBrowser(address string) {
-	var cmd *exec.Cmd
-	switch runtime.GOOS {
-	case "windows":
-		cmd = exec.Command("rundll32.exe", "url.dll,FileProtocolHandler", address)
-	case "darwin":
-		cmd = exec.Command("open", address)
-	default:
-		cmd = exec.Command("xdg-open", address)
-	}
+	cmd := exec.Command("rundll32.exe", "url.dll,FileProtocolHandler", address)
 	if err := cmd.Start(); err == nil {
 		go cmd.Wait()
 	}
