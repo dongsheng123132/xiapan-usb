@@ -1,6 +1,6 @@
 # 网管精简版开发
 
-唯一源码仓库：`dongsheng123132/xiapan-usb`。当前开发版本 `0.5.0-dev`，交付平台仅 Windows x64；历史 `v0.4.4-preview` Release 保持原样。
+唯一源码仓库：`dongsheng123132/xiapan-usb`。当前预发布版本 `0.5.0-preview`，交付平台仅 Windows x64；历史 `v0.4.4-preview` Release 保持原样。
 
 ```powershell
 go test ./...
@@ -17,3 +17,5 @@ python scripts/package-genie.py
 `web/locales.json` 为中英界面词典。修改 `web/`、技能或内嵌网络脚本后重新构建。业务测动作核心，权限测本机 HTTP 与 MCP，界面仅做必要交互验证。
 
 不恢复云钱包、离线模型、软件下载目录、跨平台完整包或启动救援入口。先验证真实客户的复用频率，再决定是否另开项目。
+
+发布时先合并源码，再从干净的合并提交构建。制包会拒绝脏工作树或与源码提交不一致的可执行文件；ZIP、SHA-256 和版本清单一起进入 GitHub Release。

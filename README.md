@@ -4,7 +4,9 @@
 
 [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
-This source is **0.5.0-dev**, an unpublished, reduced Windows x64 edition. The [product page](https://usb.u-claw.org.cn/) and [v0.4.4-preview Release](https://github.com/dongsheng123132/xiapan-usb/releases/tag/v0.4.4-preview) still distribute the earlier product.
+**Download and run (Windows x64):** [v0.5.0-preview · IT Support Toolkit](https://github.com/dongsheng123132/xiapan-usb/releases/tag/v0.5.0-preview).
+
+This preview focuses on company IT troubleshooting. The [product page](https://usb.u-claw.org.cn/) and [v0.4.4-preview](https://github.com/dongsheng123132/xiapan-usb/releases/tag/v0.4.4-preview) describe the earlier edition. Validation on a second company PC and real enterprise network is still pending; see [validation scope](docs/VALIDATION.md).
 
 - Inspect system memory, disk space, processes and startup entries.
 - Diagnose adapters, gateway reachability, DNS, web access and proxies without changing settings.

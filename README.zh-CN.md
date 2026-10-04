@@ -4,7 +4,9 @@
 
 [English](README.md) · [日本語](README.ja.md)
 
-当前源码为 **0.5.0-dev 网管精简开发版**，尚未公开发行。[产品页](https://usb.u-claw.org.cn/) 和 [v0.4.4-preview Release](https://github.com/dongsheng123132/xiapan-usb/releases/tag/v0.4.4-preview) 仍提供历史版本，功能范围与本分支不同。
+**下载即用（Windows x64）：** [v0.5.0-preview 网管版](https://github.com/dongsheng123132/xiapan-usb/releases/tag/v0.5.0-preview)。
+
+本版为面向公司网管的预发布版。[产品页](https://usb.u-claw.org.cn/)及 [v0.4.4-preview](https://github.com/dongsheng123132/xiapan-usb/releases/tag/v0.4.4-preview) 是历史版本；第二台企业电脑、真实企业网络与 U 盘移动验收尚待完成，详见[验证范围](docs/VALIDATION.md)。
 
 ## 只做现场排障
 

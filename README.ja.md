@@ -4,7 +4,9 @@
 
 **Windows x64 の社内 PC を調査し、証拠を確認し、システムツールを開き、報告を保存します。**
 
-現在のソースは未公開の `0.5.0-dev` 縮小開発版です。[製品ページ](https://usb.u-claw.org.cn/) と [v0.4.4-preview](https://github.com/dongsheng123132/xiapan-usb/releases/tag/v0.4.4-preview) は旧版です。
+**ダウンロードして使う（Windows x64）：** [v0.5.0-preview · 社内 IT 版](https://github.com/dongsheng123132/xiapan-usb/releases/tag/v0.5.0-preview)。
+
+社内 IT 向けのプレビュー版です。[製品ページ](https://usb.u-claw.org.cn/) と [v0.4.4-preview](https://github.com/dongsheng123132/xiapan-usb/releases/tag/v0.4.4-preview) は旧版です。別の社内 PC、実際の企業ネットワークと USB 移動の検証は未完了です。[検証範囲](docs/VALIDATION.md)。
 
 システム、メモリ、ディスク、プロセス、自動起動、ネットワーク、ネットワーク機器のドライバー情報を読み取り専用で調べます。Windows 標準ツールと携帯可能な報告を提供します。
 

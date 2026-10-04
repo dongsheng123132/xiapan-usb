@@ -12,4 +12,4 @@ New-Item -ItemType Directory -Path $dest -Force|Out-Null
 Expand-Archive -LiteralPath $archive -DestinationPath $dest -Force
 if((Get-FileHash -LiteralPath (Join-Path $dest 'picoclaw.exe') -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'f939c001c729e6e326a99f154f376816ac12a79cb70968f882b3ee287f45119e'){throw '程序 SHA-256 不匹配'}
 Copy-Item -LiteralPath (Join-Path $dest 'LICENSE') -Destination (Join-Path $projectRoot 'licenses/PicoClaw-MIT.txt')
-Write-Output 'PicoClaw v0.3.1 已准备并校验；真实云端问答还需要钱包额度。'
+Write-Output 'PicoClaw v0.3.1 已准备并校验；AI 问答按需配置公司批准的 API。'
