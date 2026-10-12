@@ -38,17 +38,20 @@ def copy_reviewed_tree(source, target):
     source = source.resolve()
     if any(p.is_symlink() for p in source.rglob('*')):
         raise ValueError('Supplemental assets may not contain links')
-    expected_files = set()
+    expected_files = {}
     for line in (source / 'SHA256SUMS.txt').read_text('utf-8-sig').splitlines():
         expected, rel = line.split('  ', 1)
         path = (source / rel).resolve()
         if not path.is_relative_to(source) or not path.is_file() or digest(path) != expected:
             raise ValueError(f'Supplemental asset checksum mismatch: {rel}')
-        expected_files.add(rel)
+        expected_files[rel] = expected
     actual = {p.relative_to(source).as_posix() for p in source.rglob('*') if p.is_file()}
-    if actual != expected_files | {'SHA256SUMS.txt'}:
+    if actual != set(expected_files) | {'SHA256SUMS.txt'}:
         raise ValueError('Supplemental staging contains unreviewed files')
     shutil.copytree(source, target)
+    for rel, expected in expected_files.items():
+        if digest(target / rel) != expected:
+            raise ValueError(f'Supplemental asset changed during packaging: {rel}')
 
 
 def command(path, tool_id):
