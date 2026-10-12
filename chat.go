@@ -33,6 +33,7 @@ type ChatSession struct {
 	Messages    []ChatMessage `json:"messages"`
 	Pending     []Proposal    `json:"pending"`
 	Engine      string        `json:"engine"`
+	OfflineOnly bool          `json:"offline_only"`
 	progressKey string
 }
 
@@ -66,6 +67,10 @@ func loadChat(root, id string) (ChatSession, error) {
 		return s, errors.New("对话记录损坏，已保留原文件")
 	}
 	s.progressKey = root + "/" + id
+	s.OfflineOnly = offlineCustomerMode(root)
+	if s.OfflineOnly && s.Engine != "local" && s.Engine != "guide" {
+		s.Engine = defaultChatEngine(root)
+	}
 	return s, nil
 }
 func saveChat(root string, s *ChatSession) error {
@@ -91,7 +96,7 @@ func chatAction(ctx context.Context, root, id string, input map[string]any) (any
 		return nil, nil
 	}
 	if id == "chat.start" {
-		s := ChatSession{ID: uniqueID(), Title: "新对话", Messages: []ChatMessage{}, Pending: []Proposal{}, Engine: "pico"}
+		s := ChatSession{ID: uniqueID(), Title: "新对话", Messages: []ChatMessage{}, Pending: []Proposal{}, Engine: defaultChatEngine(root), OfflineOnly: offlineCustomerMode(root)}
 		if err := saveChat(root, &s); err != nil {
 			return nil, err
 		}
@@ -192,7 +197,10 @@ func chatAction(ctx context.Context, root, id string, input map[string]any) (any
 	addMessage(&s, "user", message)
 	s.Engine = str(input, "engine")
 	if s.Engine == "" {
-		s.Engine = "pico"
+		s.Engine = defaultChatEngine(root)
+	}
+	if s.OfflineOnly && s.Engine != "local" && s.Engine != "guide" {
+		return nil, errors.New("此发行包使用离线模式，请选择本盘离线 AI 或本地维护向导")
 	}
 	// Persist the question before IO. A cancelled model call must not lose it.
 	if err = saveChat(root, &s); err != nil {
@@ -202,6 +210,9 @@ func chatAction(ctx context.Context, root, id string, input map[string]any) (any
 	publishProgress(&s)
 	if strings.HasPrefix(message, "/") {
 		err = runSlash(ctx, root, &s, message)
+	} else if reference := offlineReferenceReply(&s, message, requestLanguage(root, input)); reference != "" {
+		// Verified instructions precede automatic inspection and model inference.
+		addMessage(&s, "assistant", reference)
 	} else if s.Engine == "cloud" {
 		err = cloudConversation(ctx, root, &s, str(input, "model"), requestLanguage(root, input))
 	} else {
@@ -486,8 +497,17 @@ func localConversation(ctx context.Context, root string, s *ChatSession, message
 	if containsAny(message, "进程", "占用", "卡顿") {
 		ids = append(ids, "processes.inspect")
 	}
-	if containsAny(message, "网络", "上网", "DNS") {
-		ids = append(ids, "network.diagnose")
+	if containsAny(message, "网络", "上网", "DNS", "没网", "断网", "网卡", "代理") {
+		// Ordinary offline questions only inspect local adapters. Public reachability
+		// probes remain explicit /网络 or /断网 actions, never an AI prerequisite.
+		if offlineCustomerMode(root) {
+			ids = append(ids, "network.inspect")
+		} else {
+			ids = append(ids, "network.diagnose")
+		}
+	}
+	if containsAny(message, "驱动", "硬件 ID") {
+		ids = append(ids, "drivers.inspect")
 	}
 	if containsAny(message, "盘里", "资源", "模型", "工具") {
 		ids = append(ids, "resources.scan")
@@ -508,7 +528,13 @@ func localConversation(ctx context.Context, root string, s *ChatSession, message
 		if err != nil {
 			return err
 		}
-		if len(state.Services) == 0 && state.Bundled {
+		// A customer drive owns its bundled runtime. Do not silently substitute an
+		// unrelated Ollama service already running on the customer's computer.
+		bundledReady := false
+		for _, service := range state.Services {
+			bundledReady = bundledReady || service.Kind == "bundled"
+		}
+		if state.Bundled && (len(state.Services) == 0 || (offlineCustomerMode(root) && !bundledReady)) {
 			if _, err = startModel(ctx, root, map[string]any{"confirmed": true}); err != nil {
 				return err
 			}
@@ -520,6 +546,9 @@ func localConversation(ctx context.Context, root string, s *ChatSession, message
 		if len(state.Services) == 0 {
 			return errors.New("本盘离线模型尚未备齐或启动；可切换维护向导")
 		}
+		if offlineCustomerMode(root) && !state.Bundled {
+			return errors.New("本盘离线模型资源缺失，请使用本地维护向导；不会改用云端或其他本机模型")
+		}
 		service := state.Services[0]
 		for _, x := range state.Services {
 			if x.Kind == "bundled" {
@@ -527,11 +556,11 @@ func localConversation(ctx context.Context, root string, s *ChatSession, message
 				break
 			}
 		}
-		p, err := maintenancePlan(ctx, root, map[string]any{"message": message, "backend": service.Kind, "model": service.Model})
+		reply, err := offlineMaintenanceReply(ctx, root, s, message, service, requestLanguage(root, input))
 		if err != nil {
 			return err
 		}
-		addMessage(s, "assistant", p.Reply+"\n\n这是本地小模型的说明，需结合上方实测结果判断。")
+		addMessage(s, "assistant", reply+"\n\n本地小模型参考随盘维护知识回答，请结合实际检测核实。")
 		return nil
 	}
 	p := guide(message)

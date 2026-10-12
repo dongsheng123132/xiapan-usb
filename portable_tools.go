@@ -39,6 +39,13 @@ func portableTools() []PortableTool {
 	if err != nil || json.Unmarshal(b, &rows) != nil {
 		return nil
 	}
+	// Customer maintenance editions pin their additional tools at build time too.
+	if extra, readErr := assets.ReadFile("catalog/offline-tools.json"); readErr == nil {
+		var additional []PortableTool
+		if json.Unmarshal(extra, &additional) == nil {
+			rows = append(rows, additional...)
+		}
+	}
 	return rows
 }
 

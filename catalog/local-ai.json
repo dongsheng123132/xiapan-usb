@@ -1,10 +1,10 @@
 {
   "ready": true,
   "platform": "windows/amd64",
-  "model_name": "Qwen3.5-0.8B-Q4_0",
-  "model_path": "models/Qwen3.5-0.8B-Q4_0.gguf",
-  "model_sha256": "57d1997790d1744fba5b40a7317df71ea5e2acee28c47e78f0cce39c0703f8cf",
-  "model_source": "https://huggingface.co/ggml-org/Qwen3.5-0.8B-GGUF/tree/8fea620",
+  "model_name": "Qwen3.5-2B-Q4_K_M",
+  "model_path": "models/Qwen3.5-2B-Q4_K_M.gguf",
+  "model_sha256": "aaf42c8b7c3cab2bf3d69c355048d4a0ee9973d48f16c731c0520ee914699223",
+  "model_source": "https://huggingface.co/unsloth/Qwen3.5-2B-GGUF/tree/f6d5376be1edb4d416d56da11e5397a961aca8ae",
   "engine_version": "b11146",
   "engine_path": "runtime/windows-x64/llama-server.exe",
   "engine_files": [
@@ -128,5 +128,11 @@
       "path": "runtime/windows-x64/mtmd.dll",
       "sha256": "592ed18ee70d874c9d80ec0c9eb014258c10d9087462e03f8fc00b9acfb47b9a"
     }
-  ]
+  ],
+  "model_download_url": "https://huggingface.co/unsloth/Qwen3.5-2B-GGUF/resolve/f6d5376be1edb4d416d56da11e5397a961aca8ae/Qwen3.5-2B-Q4_K_M.gguf?download=true",
+  "verified_download_mirror": "https://modelscope.cn/models/unsloth/Qwen3.5-2B-GGUF/resolve/90057e31161eb95cc0bc1413c4f53b44de9b49c8/Qwen3.5-2B-Q4_K_M.gguf",
+  "model_original": "https://huggingface.co/Qwen/Qwen3.5-2B",
+  "quantizer": "Unsloth",
+  "model_bytes": 1280835840,
+  "maintenance_finetuned": false
 }

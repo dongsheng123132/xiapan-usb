@@ -20,10 +20,11 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 )
 
-const version = "0.4.4-preview"
+const version = "0.4.4-offline.20261012"
 
 //go:embed web/* skills/*/SKILL.md catalog/*.json
 var assets embed.FS
@@ -144,6 +145,21 @@ func runAction(ctx context.Context, root, id string, input map[string]any) Resul
 
 func str(input map[string]any, key string) string { s, _ := input[key].(string); return s }
 
+// Local model startup includes reading and hashing weights from a potentially
+// slow USB drive. GUI and CLI use the same budget, separate from ordinary IO.
+func actionTimeout(root, id string, input map[string]any) time.Duration {
+	if id == "models.start" {
+		return 240 * time.Second
+	}
+	if id == "chat.send" {
+		engine := str(input, "engine")
+		if engine == "local" || (engine == "" && defaultChatEngine(root) == "local") {
+			return 240 * time.Second
+		}
+	}
+	return 60 * time.Second
+}
+
 func main() {
 	defer stopAllModels()
 	args := withoutProcessSerial(os.Args[1:])
@@ -197,6 +213,9 @@ func main() {
 	}
 	if err = server.Serve(listener); err != nil && err != http.ErrServerClosed {
 		fmt.Fprintln(os.Stderr, err)
+		if stopErr := stopAllModels(); stopErr != nil {
+			fmt.Fprintln(os.Stderr, stopErr)
+		}
 		os.Exit(1)
 	}
 }
@@ -270,11 +289,16 @@ func actionCLI(args []string) {
 			os.Exit(2)
 		}
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), actionTimeout(root, id, input))
 	defer cancel()
 	r := runAction(ctx, root, id, input)
 	json.NewEncoder(os.Stdout).Encode(r)
 	if !r.OK {
+		// os.Exit bypasses main's defer. A failed final report/chat save may
+		// happen after this CLI action has already started the bundled model.
+		if stopErr := stopAllModels(); stopErr != nil {
+			fmt.Fprintln(os.Stderr, stopErr)
+		}
 		os.Exit(1)
 	}
 	if id == "models.start" {
@@ -294,6 +318,9 @@ func newServer(root, base string) (*http.Server, error) {
 	parsed, _ := url.Parse(base)
 	mux := http.NewServeMux()
 	var server *http.Server
+	actionContext, cancelActions := context.WithCancel(context.Background())
+	var actionGate sync.Mutex
+	var activeActions sync.WaitGroup
 	mux.HandleFunc("/api/quit", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "method", 405)
@@ -303,9 +330,27 @@ func newServer(root, base string) (*http.Server, error) {
 			http.Error(w, "需要本机虾盘会话", 403)
 			return
 		}
+		// Cancel startup/inference before taking modelMu in stopAllModels.
+		// Never tell the user it is safe to remove the drive before Wait finishes.
+		actionGate.Lock()
+		cancelActions()
+		actionGate.Unlock()
+		if err := stopAllModels(); err != nil {
+			http.Error(w, err.Error(), http.StatusServiceUnavailable)
+			return
+		}
+		// Cancelled conversations may still be saving their final notice. Wait for
+		// those owned writes too; reject new work before WaitGroup.Wait starts.
+		drained := make(chan struct{})
+		go func() { activeActions.Wait(); close(drained) }()
+		select {
+		case <-drained:
+		case <-time.After(5 * time.Second):
+			http.Error(w, "正在结束维护操作，请稍后再次退出；尚不能安全移除 U 盘", http.StatusServiceUnavailable)
+			return
+		}
 		writeJSON(w, Result{OK: true, Action: "app.quit"})
 		go func() {
-			stopAllModels()
 			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 			defer cancel()
 			server.Shutdown(ctx)
@@ -327,6 +372,15 @@ func newServer(root, base string) (*http.Server, error) {
 			http.Error(w, "请从本机虾盘界面发起操作", 403)
 			return
 		}
+		actionGate.Lock()
+		if actionContext.Err() != nil {
+			actionGate.Unlock()
+			http.Error(w, "程序正在退出，未接受新的操作", http.StatusServiceUnavailable)
+			return
+		}
+		activeActions.Add(1)
+		actionGate.Unlock()
+		defer activeActions.Done()
 		var req struct {
 			Action string         `json:"action"`
 			Input  map[string]any `json:"input"`
@@ -335,8 +389,10 @@ func newServer(root, base string) (*http.Server, error) {
 			writeJSON(w, Result{OK: false, Error: "请求格式不正确"})
 			return
 		}
-		ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
+		ctx, cancel := context.WithTimeout(actionContext, actionTimeout(root, req.Action, req.Input))
 		defer cancel()
+		stopRequestWatch := context.AfterFunc(r.Context(), cancel)
+		defer stopRequestWatch()
 		writeJSON(w, runAction(ctx, root, req.Action, req.Input))
 	})
 	mux.HandleFunc("/api/skills", func(w http.ResponseWriter, r *http.Request) {
@@ -397,7 +453,8 @@ func newServer(root, base string) (*http.Server, error) {
 		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
 		mux.ServeHTTP(w, r)
 	})
-	server = &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 65 * time.Second, IdleTimeout: 30 * time.Second}
+	server = &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 245 * time.Second, IdleTimeout: 30 * time.Second}
+	server.RegisterOnShutdown(cancelActions)
 	return server, nil
 }
 

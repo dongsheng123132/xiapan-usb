@@ -43,7 +43,15 @@ function result(parent,id,d){
  else if(id==='network.rescue'){networkCard(parent,d);}
  detail(parent,d);
 }
-function render(){if(!session)return;$('task-title').textContent=session.messages.length?session.title:t('新对话');$('welcome').classList.toggle('hidden',session.messages.length>0);const box=$('messages');box.replaceChildren();const traces=[];
+function applySessionMode(resetEngine=false){
+ const offlineOnly=session?.offline_only===true;
+ $('wallet-open').classList.toggle('hidden',offlineOnly);$('model-settings').classList.toggle('hidden',offlineOnly);
+ const online=$('engine-select').querySelector('option[value="pico"]');online.disabled=offlineOnly;online.hidden=offlineOnly;
+ if(resetEngine||(offlineOnly&&!['local','guide'].includes($('engine-select').value)))$('engine-select').value=session?.engine||'guide';
+ if(offlineOnly){ui($('welcome-title'),'离线电脑维护助手');ui($('welcome-description'),'断网也能问。使用随盘小模型与维护知识，检测和工具在本机运行。');$('welcome-strengths').classList.add('hidden');ui($('edition-note'),'离线维护版');}
+ engineNote();
+}
+function render(){if(!session)return;applySessionMode();$('task-title').textContent=session.messages.length?session.title:t('新对话');$('welcome').classList.toggle('hidden',session.messages.length>0);const box=$('messages');box.replaceChildren();const traces=[];
  for(const m of session.messages){const c=el('article',undefined,`message ${m.role}`);c.dataset.messageId=m.id;
   if(m.role==='user'||m.role==='assistant'||m.role==='notice'){c.append(el('div',m.role==='user'?'你':m.role==='notice'?'提示':'虾盘','message-label'),el('div',m.text,'message-text',true));}
   else if(m.role==='action'){c.className='action-card';c.append(el('div','✓ '+(names[m.action]||m.action),'action-heading'));result(c,m.action,m.data);traces.push(m);}
@@ -53,8 +61,8 @@ function render(){if(!session)return;$('task-title').textContent=session.message
  const trace=$('trace-content');trace.replaceChildren();for(const m of traces){const c=el('details',undefined,'trace-item');c.append(el('summary',m.action),el('pre',JSON.stringify(m.data,null,2)));trace.append(c);}ui($('trace-count'),'{count} 项动作',{count:traces.length});box.lastElementChild?.scrollIntoView({block:'nearest'});
 }
 function setBusy(value,text='● 正在处理当前任务…'){busy=value;$('send').disabled=value;$('new-chat').disabled=value;$('question').disabled=value;$('engine-select').disabled=value;$('cloud-model').disabled=value;$('busy-status').classList.toggle('hidden',!value);ui($('busy-status'),text);$('language-select').disabled=value;for(const b of document.querySelectorAll('.proposal-card button'))b.disabled=value;}
-async function listSessions(){const rows=await run('chat.list'),c=$('session-list');c.replaceChildren();for(const row of rows){const b=el('button',undefined,'session-item');ui(b,row.untitled?'新对话':row.title);if(session&&row.id===session.id)b.classList.add('active');b.onclick=async()=>{if(busy)return;try{session=await run('chat.read',{session_id:row.id});showView('chat');render();await listSessions();closeSidebarOnNarrow();}catch(e){fail(e);}};c.append(b);}return rows;}
-async function newChat(){if(busy)return;session=await run('chat.start');showView('chat');render();await listSessions();$('question').focus();}
+async function listSessions(){const rows=await run('chat.list'),c=$('session-list');c.replaceChildren();for(const row of rows){const b=el('button',undefined,'session-item');ui(b,row.untitled?'新对话':row.title);if(session&&row.id===session.id)b.classList.add('active');b.onclick=async()=>{if(busy)return;try{session=await run('chat.read',{session_id:row.id});applySessionMode(true);showView('chat');render();await listSessions();closeSidebarOnNarrow();}catch(e){fail(e);}};c.append(b);}return rows;}
+async function newChat(){if(busy)return;session=await run('chat.start');applySessionMode(true);showView('chat');render();await listSessions();$('question').focus();}
 async function send(message){if(busy||!message.trim())return;if(!session)await newChat();showView('chat');setBusy(true,$('engine-select').value==='local'?'● 本盘离线 AI：校验与启动可能需要几十秒…':'● 正在检测与回答…');
  const progressTimer=setInterval(async()=>{try{const p=await run('chat.progress',{session_id:session.id});if(p){const saved=session;session=p;render();session=saved;}}catch{}},800);
  const local=el('article',undefined,'message user');local.append(el('div','你','message-label'),el('div',message,'message-text',true));$('messages').append(local);$('welcome').classList.add('hidden');local.scrollIntoView({block:'nearest'});$('question').value='';
@@ -103,5 +111,6 @@ document.addEventListener('languagechange',()=>{render();engineNote();walletMini
 // Once JS owns it, desktop keeps it interactive and narrow screens use the drawer.
 function syncSidebarInert(){const bar=document.querySelector('.sidebar');if(!bar)return;const drawer=narrow()&&!document.body.classList.contains('history-open');bar.inert=drawer;}
 window.addEventListener('resize',syncSidebarInert);
-(async()=>{try{await I18n.init();}catch(e){fail(e);}try{await loadSettings();}catch(e){fail(e);}try{const saved=localStorage.getItem(SIDEBAR_KEY);setSidebarCollapsed(saved==='1',false);}catch{setSidebarCollapsed(false,false);}syncSidebarInert();engineNote();await inspect();const rows=await listSessions();session=rows.length?await run('chat.read',{session_id:rows[0].id}):await run('chat.start');render();await listSessions();})().catch(fail);
+setBusy(true,'● 正在读取本盘配置…');
+(async()=>{try{await I18n.init();}catch(e){fail(e);}try{await loadSettings();}catch(e){fail(e);}try{const saved=localStorage.getItem(SIDEBAR_KEY);setSidebarCollapsed(saved==='1',false);}catch{setSidebarCollapsed(false,false);}syncSidebarInert();await inspect();const rows=await listSessions();session=rows.length?await run('chat.read',{session_id:rows[0].id}):await run('chat.start');applySessionMode(true);render();await listSessions();})().catch(fail).finally(()=>setBusy(false));
 // Wallet creation is requested explicitly from model settings or the wallet panel.

@@ -31,10 +31,11 @@ foreach($file in (Get-ChildItem -LiteralPath $server.DirectoryName -File | Where
 }
 $modelDir=Join-Path $projectRoot 'models'
 New-Item -ItemType Directory -Path $modelDir -Force | Out-Null
-$modelPath=Join-Path $modelDir 'Qwen3.5-0.8B-Q4_0.gguf'
-Get-VerifiedFile 'https://huggingface.co/ggml-org/Qwen3.5-0.8B-GGUF/resolve/8fea620/Qwen3.5-0.8B-Q4_0.gguf?download=true' $modelPath '57d1997790d1744fba5b40a7317df71ea5e2acee28c47e78f0cce39c0703f8cf'
 $manifestPath=Join-Path $projectRoot 'catalog\local-ai.json'
 $manifest=Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+$modelPath=Join-Path $projectRoot $manifest.model_path
+if(!$manifest.model_download_url){throw '模型清单缺少固定版本下载地址'}
+Get-VerifiedFile $manifest.model_download_url $modelPath $manifest.model_sha256
 $manifest.ready=$true
 $manifest.engine_files=$engineFiles
 $temporaryManifest="$manifestPath.tmp"

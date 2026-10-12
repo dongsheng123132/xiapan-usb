@@ -1,0 +1,30 @@
+[
+  {
+    "id": "physical-disk-warning",
+    "match": [["硬盘", "磁盘", "hdd", "disk", "drive"], ["异响", "咔哒", "咔嗒", "敲击", "掉盘", "clicking", "grinding"]],
+    "zh": "1. 如果硬盘出现新的咔哒、磨擦等异常声音，尤其同时丢文件、掉盘或读错误，应停止使用；涉及重要数据时关机并避免反复通电，联系专业数据恢复。仅凭声音不能确定故障部件，声音暂时消失也不能证明故障消失。\n2. 不要先运行 PhotoRec/TestDisk、文件系统修复、压力测试或普通大批量复制，也不要格式化、初始化或拆开硬盘。疑似物理故障盘应由具备设备和经验的人员判断镜像方案，不能照正常硬盘的备份步骤处理。\n3. 先记录硬盘型号、症状及已有备份位置。如果只是普通风扇声或正常工作声，需要先区分声源；本程序尚未检查该盘，也没有执行任何扫描或修复。",
+    "en": "1. New clicking or grinding, especially with missing files, disconnects or read errors, can indicate physical failure. Stop using the disk; for important data, shut down and avoid repeated power-on attempts. Consult a professional recovery service. A sound disappearing does not prove the fault is gone.\n2. Do not start recovery scans, filesystem repairs, stress tests, ordinary bulk copying, formatting, initialization or disassembly. A specialist should assess whether and how to image a suspect physical disk.\n3. Record the model, symptoms and existing backup locations. Normal drive or fan sounds need to be distinguished from new abnormal noise. This program has not examined, scanned or repaired the disk.",
+    "sources": ["https://www.seagate.com/files/www-content/services-software/en-us/docs/data-loss-faq-tp-638-1-1206us.pdf"]
+  },
+  {
+    "id": "deleted-data",
+    "match": [["误删", "文件丢失", "文件不见", "文件也不见", "分区丢失", "deleted files", "lost files"]],
+    "zh": "1. 先停止向原盘写入，不把恢复软件或恢复结果放到原盘；如果伴随异响、掉盘或读错误，应先停用并咨询专业恢复。\n2. 查已有备份和回收站；需要扫描时，先按型号、容量确认源盘，准备另一块健康介质保存结果。无法确定源盘或重要数据不可替代时，先交给专业人员。\n3. PhotoRec 可能不保留原文件名与目录；TestDisk 的写分区操作有风险，不能为了找文件先初始化或格式化。本程序没有执行恢复操作。",
+    "en": "1. Stop writes to the source. Do not place recovery software or recovered files there. Abnormal noise, disconnects or read errors require stopping use and consulting a recovery specialist first.\n2. Check existing backups and the Recycle Bin. Before a scan, identify the source by model and capacity and prepare another healthy medium for output. Get expert help if the source is uncertain or the data is irreplaceable.\n3. PhotoRec may not preserve original names or folders. TestDisk partition writes need expertise. Do not initialize or format the source to find files. No recovery has been executed.",
+    "sources": ["https://www.cgsecurity.org/testdisk_doc/photorec.html", "https://www.cgsecurity.org/testdisk_doc/undelete.html"]
+  },
+  {
+    "id": "organization-settings",
+    "match": [["无法加载组织设置", "unable to load organization", "cannot load organization"]],
+    "zh": "1. 这个提示表示应用未能取得所需组织配置，不能单凭它判断整台电脑断网。其他网站正常时，先按应用或目标服务问题排查。\n2. 保留错误信息，核对当前登录账号与组织权限、应用使用的代理是否正常、目标服务是否可达。系统日期时间偏差可能影响 HTTPS 证书或身份认证；它本身不是 DNS 解析失败的证据。\n3. 不因这一条报错关闭防火墙、删除登录数据或重置全部网络。确认网络或服务恢复后再重试；组织权限问题请联系组织管理员。该指引没有修改账号、代理或系统设置。",
+    "en": "1. This message means the app could not obtain required organization configuration. It alone does not establish a whole-PC outage. If other websites work, investigate the app or its target service first.\n2. Preserve the error and check the signed-in account and organization access, the app's proxy, and target-service reachability. Incorrect date/time can affect HTTPS certificates or authentication; it is not by itself evidence of DNS failure.\n3. Do not disable the firewall, delete sign-in data or reset all networking based on this error alone. Retry after connectivity/service recovery; ask the organization administrator about access issues. No account, proxy or system settings have been changed.",
+    "sources": ["客户提供的 Codex 错误对话框；按提示核对网络、代理、防火墙及组织权限，不将其当作整机断网证据。"]
+  },
+  {
+    "id": "wired-network",
+    "match": [["网线", "以太网", "ethernet"], ["没有网络", "没网", "断网", "不能上网", "无法上网", "连不上网", "no internet"]],
+    "zh": "1. 确认电脑与路由器 LAN 口之间的网线两端插牢，观察两端链路灯；可用一根已知正常的网线或另一个 LAN 口做对照。灯亮只说明有链路线索，不证明互联网正常。\n2. 用同一路由器下的另一台设备对照：都不能上网时检查路由器供电、上联网线和运营商状态；只有这台失败时继续看本机网卡与 IP/网关信息。不要先恢复路由器出厂设置。\n3. 在设备管理器查看网卡是否存在及故障码；缺驱动时记录硬件 ID，再用有网电脑从厂商准备匹配型号、Windows 版本和位数的驱动。本盘没有通用网卡驱动包。有线网络不靠飞行模式排障；本段未执行检测或修复。",
+    "en": "1. Check both ends of the cable between the PC and a router LAN port, and observe link LEDs. Compare with a known-good cable or another LAN port. A lit link LED alone does not prove internet access.\n2. Compare another device on the same router. If both fail, check router power, uplink and ISP status; if only this PC fails, inspect its adapter and IP/gateway information. Do not start with a router factory reset.\n3. Check adapter presence and error codes in Device Manager. For missing drivers, record hardware IDs and obtain a matching vendor driver for the model, Windows version and architecture on an online PC. This package has no universal NIC driver pack. Airplane mode is not an Ethernet diagnostic. No checks or repairs have been executed.",
+    "sources": ["https://support.microsoft.com/en-us/windows/fix-ethernet-connection-problems-in-windows-2311254e-cab8-42d6-90f3-cb0b9f63645f"]
+  }
+]

@@ -70,6 +70,29 @@ func runtimeResourcePath(root, rel string) (string, error) {
 }
 
 func verifyResource(root, rel, expected string) (string, error) {
+	return verifyResourceContext(context.Background(), root, rel, expected)
+}
+
+type contextResourceReader struct {
+	ctx    context.Context
+	reader io.Reader
+}
+
+func (r contextResourceReader) Read(p []byte) (int, error) {
+	if err := r.ctx.Err(); err != nil {
+		return 0, err
+	}
+	n, err := r.reader.Read(p)
+	if cancelled := r.ctx.Err(); cancelled != nil {
+		return n, cancelled
+	}
+	return n, err
+}
+
+func verifyResourceContext(ctx context.Context, root, rel, expected string) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
 	path, err := runtimeResourcePath(root, rel)
 	if err != nil {
 		return "", err
@@ -84,7 +107,7 @@ func verifyResource(root, rel, expected string) (string, error) {
 		return "", errors.New("本地资源不是普通文件")
 	}
 	h := sha256.New()
-	if _, err = io.Copy(h, f); err != nil {
+	if _, err = io.Copy(h, contextResourceReader{ctx: ctx, reader: f}); err != nil {
 		return "", err
 	}
 	if hex.EncodeToString(h.Sum(nil)) != expected {
@@ -118,6 +141,9 @@ func startModel(ctx context.Context, root string, input map[string]any) (any, er
 	if input["confirmed"] != true {
 		return nil, errors.New("请确认启动本盘模型；将使用电脑的 CPU 和内存")
 	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	m, err := aiManifest()
 	if err != nil {
 		return nil, err
@@ -127,6 +153,9 @@ func startModel(ctx context.Context, root string, input map[string]any) (any, er
 	}
 	modelMu.Lock()
 	defer modelMu.Unlock()
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if existing := modelProcesses[root]; existing != nil {
 		select {
 		case <-existing.done:
@@ -142,14 +171,17 @@ func startModel(ctx context.Context, root string, input map[string]any) (any, er
 	address := reservation.Addr().String()
 	port := reservation.Addr().(*net.TCPAddr).Port
 	reservation.Close()
-	modelPath, err := verifyResource(root, m.ModelPath, m.ModelSHA)
+	modelPath, err := verifyResourceContext(ctx, root, m.ModelPath, m.ModelSHA)
 	if err != nil {
 		return nil, err
 	}
 	for _, f := range m.EngineFiles {
-		if _, err = verifyResource(root, f.Path, f.SHA); err != nil {
+		if _, err = verifyResourceContext(ctx, root, f.Path, f.SHA); err != nil {
 			return nil, err
 		}
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 	enginePath, err := runtimeResourcePath(root, m.EnginePath)
 	if err != nil {
@@ -193,6 +225,10 @@ func startModel(ctx context.Context, root string, input map[string]any) (any, er
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
 	quietProcess(cmd)
+	if err = ctx.Err(); err != nil {
+		logFile.Close()
+		return nil, err
+	}
 	if err = cmd.Start(); err != nil {
 		logFile.Close()
 		return nil, fmt.Errorf("本地模型启动失败：%w", err)
@@ -217,8 +253,11 @@ func startModel(ctx context.Context, root string, input map[string]any) (any, er
 	for {
 		select {
 		case <-ctx.Done():
-			cmd.Process.Kill()
-			return nil, errors.New("启动超时，本次启动的模型进程已停止")
+			if stopErr := stopModelProcess(p); stopErr != nil {
+				return nil, fmt.Errorf("启动已取消，但模型停止尚未确认：%w", stopErr)
+			}
+			delete(modelProcesses, root)
+			return nil, errors.New("启动已取消或超时，本次启动的模型进程已停止")
 		case <-p.done:
 			return nil, errors.New("推理程序启动后退出，请查看本盘 data/logs 中的模型日志")
 		case <-ticker.C:
@@ -234,6 +273,25 @@ func startModel(ctx context.Context, root string, input map[string]any) (any, er
 	}
 }
 
+// The Wait goroutine never takes modelMu, so callers may safely wait while
+// holding it. Retain ownership in modelProcesses until termination is confirmed.
+func stopModelProcess(p *modelProcess) error {
+	select {
+	case <-p.done:
+		return nil
+	default:
+		if err := p.cmd.Process.Kill(); err != nil && !errors.Is(err, os.ErrProcessDone) {
+			return fmt.Errorf("无法停止本次模型进程：%w", err)
+		}
+	}
+	select {
+	case <-p.done:
+		return nil
+	case <-time.After(3 * time.Second):
+		return errors.New("模型正在退出，请稍后重试；尚不能安全移除 U 盘")
+	}
+}
+
 func stopModel(root string) (any, error) {
 	modelMu.Lock()
 	defer modelMu.Unlock()
@@ -241,32 +299,22 @@ func stopModel(root string) (any, error) {
 	if p == nil {
 		return map[string]any{"stopped": false, "note": "本程序没有在此目录启动模型，不会停止其他本地服务"}, nil
 	}
-	select {
-	case <-p.done:
-	default:
-		p.cmd.Process.Kill()
-	}
-	select {
-	case <-p.done:
-	case <-time.After(3 * time.Second):
-		return nil, errors.New("模型正在退出，请稍后重试")
+	if err := stopModelProcess(p); err != nil {
+		return nil, err
 	}
 	delete(modelProcesses, root)
 	return map[string]any{"stopped": true}, nil
 }
-func stopAllModels() {
+func stopAllModels() error {
 	modelMu.Lock()
 	defer modelMu.Unlock()
+	var failures []error
 	for root, p := range modelProcesses {
-		select {
-		case <-p.done:
-		default:
-			p.cmd.Process.Kill()
-		}
-		select {
-		case <-p.done:
-		case <-time.After(3 * time.Second):
+		if err := stopModelProcess(p); err != nil {
+			failures = append(failures, err)
+			continue
 		}
 		delete(modelProcesses, root)
 	}
+	return errors.Join(failures...)
 }
