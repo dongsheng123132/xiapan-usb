@@ -397,6 +397,7 @@ def main():
                 if expected_kind == 'reference':
                     require(KNOWLEDGE_MARKER in answer, 'Fixed reference answer lacks its explicit non-model marker')
                     require(MODEL_SUFFIX not in answer, 'Fixed reference incorrectly claims model generation')
+                    require(not case['actions'], 'Fixed reference unexpectedly ran an inspection or other action')
                     require(case['runtime_generation_delta']['generated_tokens'] == 0
                             and case['runtime_generation_delta']['completed_generations'] == 0,
                             'A fixed-reference scenario unexpectedly invoked model generation')
