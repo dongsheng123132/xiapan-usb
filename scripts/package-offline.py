@@ -34,6 +34,23 @@ def text(path, content, bom=False):
     path.write_text(content, encoding='utf-8-sig' if bom else 'utf-8')
 
 
+def copy_reviewed_tree(source, target):
+    source = source.resolve()
+    if any(p.is_symlink() for p in source.rglob('*')):
+        raise ValueError('Supplemental assets may not contain links')
+    expected_files = set()
+    for line in (source / 'SHA256SUMS.txt').read_text('utf-8-sig').splitlines():
+        expected, rel = line.split('  ', 1)
+        path = (source / rel).resolve()
+        if not path.is_relative_to(source) or not path.is_file() or digest(path) != expected:
+            raise ValueError(f'Supplemental asset checksum mismatch: {rel}')
+        expected_files.add(rel)
+    actual = {p.relative_to(source).as_posix() for p in source.rglob('*') if p.is_file()}
+    if actual != expected_files | {'SHA256SUMS.txt'}:
+        raise ValueError('Supplemental staging contains unreviewed files')
+    shutil.copytree(source, target)
+
+
 def command(path, tool_id):
     # GUI and shortcuts invoke the same checked action, never a second launcher.
     text(path.parent / '参数' / (tool_id + '.json'), json.dumps({'tool_id': tool_id, 'confirmed': True}))
@@ -52,6 +69,8 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--large-agent', type=Path)
     parser.add_argument('--large-agent-sha256', help='Hash of the separately audited clean original agent archive')
+    parser.add_argument('--boot-assets', type=Path, help='Reviewed rescue preparation assets with SHA256SUMS.txt')
+    parser.add_argument('--network-assets', type=Path, help='Reviewed optional offline network driver assets with SHA256SUMS.txt')
     parser.add_argument('--allow-dirty', action='store_true', help='Internal candidate only; never use for customer master')
     args = parser.parse_args()
     resource, target = args.resources.resolve(), args.output.resolve()
@@ -151,7 +170,8 @@ def main():
     native = {'10-任务管理器': 'task-manager', '11-资源监视器': 'resource-monitor',
               '12-设备管理器': 'device-manager', '13-事件查看器': 'event-viewer',
               '14-系统信息': 'system-info', '15-磁盘清理': 'disk-cleanup',
-              '16-内存诊断-自行选择是否重启': 'memory-diagnostic', '17-网络适配器': 'network-adapters'}
+              '16-内存诊断-自行选择是否重启': 'memory-diagnostic', '17-网络适配器': 'network-adapters',
+              '18-网络设置': 'network-settings'}
     for label, tool_id in native.items():
         command(wrappers / (label + '.cmd'), tool_id)
     if args.large_agent:
@@ -159,14 +179,22 @@ def main():
         text(target / '03-大龙虾-可选/先看说明.txt',
              'U-DSH 是独立的大型 AI 工作台便携自解压包。它不属于本盘默认离线维修链路。\n'
              '双击自解压程序，选择客户电脑 NTFS 磁盘的新空文件夹，按该产品说明启动。此版本依赖目录联接，不能直接在 exFAT/FAT32 上运行。\n'
-             '程序文件已经附带，但它的模型提供商默认仍需联网和用户自己的 API Key。\n'
-             '本包没有预填账号或密钥；首启可能打开联网/充值页面。没有验证 U-DSH 对本盘小模型的工具调用能力。\n'
+             '本次为 0.2.2 源码构建，Electron 桌面窗口内嵌 Harness WebUI；随包内核和 Node 运行时已齐。\n'
+             '联网后设备钱包可自动开通并配置虾盘云模型，点击“一键开通并充值”进入对应钱包充值页，无需手填 API Key。充值由客户自行决定。\n'
+             '本包没有预填账号或密钥。请自行备份钱包密钥；使用后的程序目录不能再作为客户发盘母版。\n'
+             '断网不阻挡界面启动，但钱包充值和默认云模型需要网络。没有验证 U-DSH 对本盘小模型的工具调用能力。\n'
              '无网维护请用根目录的“开始维护.cmd”。\n')
+    if args.boot_assets:
+        copy_reviewed_tree(args.boot_assets, target / '04-启动救援准备')
+    if args.network_assets:
+        copy_reviewed_tree(args.network_assets, target / '05-旧网卡离线驱动-可选')
     text(target / '开始维护.cmd', '@echo off\nchcp 65001 >nul\nstart "" "%~dp0虾盘.exe"\n')
     shutil.copytree(ROOT / 'docs/offline-customer', target / '01-使用说明')
     checked_copy(ROOT / 'docs/offline-customer/先看这里.html', target / '先看这里.html')
     (target / 'drivers').mkdir()
-    text(target / '01-使用说明/驱动准备.txt', 'drivers/ 初始为空：当前未内置通用网卡驱动包。先用虾盘的“驱动”检测取得硬件 ID，再按厂商、系统版本、位数准备签名驱动到 drivers/。不同机器的驱动不能凭名称混装。\n')
+    text(target / '01-使用说明/驱动准备.txt',
+         'drivers/ 初始为空：供维护人员按客户硬件 ID 准备已匹配的驱动。先用虾盘的“驱动”检测取得硬件 ID，再按厂商、系统版本、位数准备签名驱动到 drivers/。不同机器的驱动不能凭名称混装。\n' +
+         ('另附“05-旧网卡离线驱动-可选”传统网卡驱动池，请先读该目录说明。它不是当前全型号通用库，没有在客户设备上安装验收，也未接入主程序自动匹配或安装。\n' if args.network_assets else '当前没有附带实体网卡驱动包。\n'))
     # Exact source snapshot for this build, including the packaging logic and offline guide.
     own_source = target / 'app/source/xiapan-usb-offline'
     tracked = subprocess.check_output(['git', 'ls-files', '-z', '--cached'], cwd=ROOT).decode().split('\0')
@@ -182,7 +210,10 @@ def main():
             'source_snapshot': 'app/source/xiapan-usb-offline',
             'offline_default': True, 'model_finetuned_for_maintenance': False,
             'customer_data_included': False, 'bootable': False,
-            'model': local, 'pico': pico, 'large_agent_included': bool(args.large_agent)}
+            'model': local, 'pico': pico, 'large_agent_included': bool(args.large_agent),
+            'large_agent': {'filename': args.large_agent.name, 'sha256': args.large_agent_sha256.lower()} if args.large_agent else None,
+            'boot_preparation_included': bool(args.boot_assets),
+            'optional_network_driver_assets_included': bool(args.network_assets)}
     text(target / '校验母盘.ps1', '''$ErrorActionPreference='Stop'
 $root=$PSScriptRoot
 $m=Get-Content -LiteralPath (Join-Path $root 'app/manifest.json') -Raw -Encoding UTF8 | ConvertFrom-Json

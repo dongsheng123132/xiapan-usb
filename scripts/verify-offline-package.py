@@ -279,6 +279,7 @@ def generation_stats(package):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--master', required=True, type=Path)
+    parser.add_argument('--test-parent', type=Path, help='Put the isolated test copy on this drive/directory; never overwrites existing files')
     parser.add_argument('--skip-relocation', action='store_true', help='Skip optional Chinese + spaces relocation check')
     questions_group = parser.add_mutually_exclusive_group()
     questions_group.add_argument('--question', action='append', help='Real model question; repeat for independent conversations')
@@ -289,8 +290,8 @@ def main():
     if any(not question.strip() for question in questions):
         parser.error('--question must not be empty')
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
-    cache = ROOT / '.cache'
-    cache.mkdir(exist_ok=True)
+    cache = args.test_parent.resolve() if args.test_parent else ROOT / '.cache'
+    cache.mkdir(parents=True, exist_ok=True)
     run_dir = Path(tempfile.mkdtemp(prefix='verify-offline-' + stamp + '-', dir=cache)).resolve()
     evidence_dir = ROOT / 'evidence'
     evidence_dir.mkdir(exist_ok=True)
