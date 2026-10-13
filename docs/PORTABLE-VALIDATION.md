@@ -12,16 +12,18 @@
 
 - `go test ./...`：钱包并发、轮换恢复、设置迁移、缓存多进程/损坏修复/降级、文件路径边界、资源哈希、离线维护和原生配置保留。
 - `go vet ./...`：静态检查。
-- 设置 `XIAPAN_PICO_INTEGRATION=1` 后运行 `go test -run TestPinnedGatewayIntegration -count=1 -v`：真实固定Pico进程对接本地假模型，不花额度；验证连续会话进程复用、原生文件工具、凭证替换、官方面板认证和会话、更新入口禁用与进程清理。
+- 设置 `XIAPAN_PICO_INTEGRATION=1` 后运行 `go test -run TestPinnedGatewayIntegration -count=1 -v`：真实固定Pico进程对接本地假模型，不花额度；验证连续会话进程复用、原生文件工具、凭证替换、官方面板认证和会话、官方Restart后两套界面继续共用服务、更新入口禁用与进程清理。
 - `scripts/build.ps1`：Windows x64、Mac ARM64、Mac Intel、Linux x64 主程序交叉构建。成品包仅含前三平台的Pico运行时。
 - `python scripts/verify-portable.py <母盘> --output <证据.json>`：核对每个发行文件、空白data、实际母盘程序的HTTP启动、离线向导、无自动开户、按需Gateway和退出。该脚本的启动时间只计进程创建到HTTP首页，不计浏览器绘制、Gateway或模型响应。
 
 前端用隔离DOM/VM验证：启动后台请求挂起仍可操作；不自动创建钱包；应急诊断直接调用本地动作；原对话保留；官方入口仅打开一次；缓存状态与中英文显示。此项不是浏览器截图审查。
 
+另用现有 Playwright/Chromium 运行真实 Windows 构建：验证首页输入、按需启动请求、应急/缓存/模型设置/工具目录，浏览器错误为零；检查桌面与 390px 窄屏，无水平溢出。钱包面板仅用拦截占位验证，未向后端开户或充值。报告和7张截图保存在制作工作区 `evidence/portable-ui-browser/`。
+
 ## 已知交付边界
 
 - Windows维护入口为9款便携工具+9项系统工具。驱动仅提供硬件信息、库存和已准备的3DP Net 21.01旧库，不声称自动匹配、安装、回滚或适配所有Windows 11网卡。
-- Mac ARM/Intel已构建；本轮Mac mini SSH不可达，尚未完成真实Mac执行权限、首次信任与U盘验收。Mac首版以AI和基础信息为主，Windows维护工具不能在Mac运行。
+- Mac ARM/Intel已构建；本轮Mac mini与MacBook Pro的SSH均连接超时，尚未完成真实Mac执行权限、首次信任与U盘验收。Mac首版以AI和基础信息为主，Windows维护工具不能在Mac运行。
 - 宿主程序缓存只保存公开二进制，首次需读U盘；Key、钱包和工作状态直接留盘。第三方维护工具目录未整体搬到宿主，避免ini/个人设置遗留电脑。
 - 充值地址只读检查可达；模型目录无凭证返回401符合鉴权预期。未做真实充值或调用收费模型；生产钱包余额不能用假模型测试替代验证。
 - 0.3秒是待实机证明的指标。开发机C盘为NVMe，不能把其HTTP启动成绩宣传为所有U盘冷启动成绩。实际制盘验收JSON保留在制作工作区的evidence/，不会把测试凭证带入成品。

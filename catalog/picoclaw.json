@@ -4,21 +4,21 @@
   "platforms": {
     "windows/amd64": {
       "path": "runtime/picoclaw/windows-x64/picoclaw.exe",
-      "sha256": "67d5f378210316023e3f044e03b411a28b6fa7671e1b18e76bb6775fc8535cc9",
+      "sha256": "ff59c3dcae78e320d44f1bbf4fa2361192e56309f35d8ebdd2a312e2b765a6de",
       "launcher_path": "runtime/picoclaw/windows-x64/picoclaw-launcher.exe",
-      "launcher_sha256": "e720ab54e8fd9212c336e866157d896fa599542d4603282ff67c1b2e676bb387"
+      "launcher_sha256": "5b3aeee234091ddb2662b752131152a97849fda1d99b8c3b85cbdc4426928c48"
     },
     "darwin/arm64": {
       "path": "runtime/picoclaw/darwin-arm64/picoclaw",
-      "sha256": "6b1720a55acea9c3c34ee3acad194084508d4905a9c39fdaf199ffa6c091dae0",
+      "sha256": "d3c21eeef232da679ff874a45d8bd0318111cc422ecc3339913bf5ef36da7bf4",
       "launcher_path": "runtime/picoclaw/darwin-arm64/picoclaw-launcher",
-      "launcher_sha256": "403c24a7804d183c6989310cb24e417099266fb177b0dff2b6e2870c138809b9"
+      "launcher_sha256": "24b5816c89311f8f92091f6d8d4b45f243f5138fbfb32f7d10c79a8b9b46cbb8"
     },
     "darwin/amd64": {
       "path": "runtime/picoclaw/darwin-x64/picoclaw",
-      "sha256": "f198cd2164e870f165bf9670e1cd36afad27be9d03d8eeca6556f6d1aafb7f45",
+      "sha256": "92f04e66265cb601e197440f5c3bcf0af8380b1baef8ace579946fcd2b5b0139",
       "launcher_path": "runtime/picoclaw/darwin-x64/picoclaw-launcher",
-      "launcher_sha256": "a9c6627ed264f81354077b10a52ec4cab2736f4379a0c4d438361b2ef370c252"
+      "launcher_sha256": "8672849a9f1b2d619e53996b0520a1f9b40c87673e1ae40032fa4821bb2cc300"
     }
   },
   "distribution": "u-pico.1",

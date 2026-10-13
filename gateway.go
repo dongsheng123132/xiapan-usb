@@ -23,26 +23,29 @@ import (
 )
 
 type picoManagedProcess struct {
-	cmd  *exec.Cmd
-	done chan struct{}
+	cmd     *exec.Cmd
+	done    chan struct{}
+	control *picoProcessControl
 }
 type picoGatewayRuntime struct {
-	mu            sync.Mutex
-	root          string
-	launcherPort  int
-	engine        string
-	address       string
-	token         string
-	gateway       *picoManagedProcess
-	launcher      *picoManagedProcess
-	launcherURL   string
-	mcpStop       func()
-	cancel        context.CancelFunc
-	stateLock     *os.File
-	restartNeeded atomic.Bool
-	activeTurns   atomic.Int32
-	bindMu        sync.Mutex
-	bindings      map[string]*ChatSession
+	mu                 sync.Mutex
+	root               string
+	launcherPort       int
+	verifiedGatewayPID int
+	lastStatus         atomic.Pointer[picoStatusSnapshot]
+	engine             string
+	address            string
+	token              string
+	gateway            *picoManagedProcess
+	launcher           *picoManagedProcess
+	launcherURL        string
+	mcpStop            func()
+	cancel             context.CancelFunc
+	stateLock          *os.File
+	restartNeeded      atomic.Bool
+	activeTurns        atomic.Int32
+	bindMu             sync.Mutex
+	bindings           map[string]*ChatSession
 }
 
 var picoRuntimes sync.Map
@@ -60,7 +63,9 @@ func picoAlive(p *picoManagedProcess) bool {
 	case <-p.done:
 		return false
 	default:
-		return true
+		// exec.Cmd.Wait may still be draining inherited output after the OS
+		// process exited. Native Restart must not reuse that stale instance.
+		return p.control != nil && p.control.alive()
 	}
 }
 func picoGatewayInspect(root string) (any, error) {
@@ -73,12 +78,27 @@ func picoGatewayInspect(root string) (any, error) {
 	}
 	if value, ok := picoRuntimes.Load(absolute); ok {
 		g := value.(*picoGatewayRuntime)
-		g.mu.Lock()
+		if snapshot := g.lastStatus.Load(); snapshot != nil {
+			data["running"], data["ui_running"] = snapshot.running, snapshot.uiRunning
+			if snapshot.url != "" {
+				data["url"] = snapshot.url
+			}
+		}
+		if !g.mu.TryLock() {
+			data["busy"] = true
+			return data, nil
+		}
 		defer g.mu.Unlock()
-		data["running"] = picoAlive(g.gateway)
-		data["ui_running"] = picoAlive(g.launcher)
-		if picoAlive(g.launcher) {
-			data["url"] = g.launcherURL
+		snapshot := g.statusSnapshotLocked()
+		data["running"] = snapshot.running
+		if !snapshot.running && snapshot.uiRunning {
+			data["busy"] = true
+		}
+		data["ui_running"] = snapshot.uiRunning
+		if snapshot.uiRunning {
+			data["url"] = snapshot.url
+		} else {
+			delete(data, "url")
 		}
 	}
 	return data, nil
@@ -108,7 +128,7 @@ func syncOwnedPicoCredentials(ctx context.Context, root string) error {
 		return nil
 	}
 	g.mu.Lock()
-	wasRunning := picoAlive(g.gateway)
+	wasRunning := g.gatewayPIDLocked() > 0
 	hadUI := picoAlive(g.launcher)
 	if !wasRunning && !hadUI {
 		g.mu.Unlock()
@@ -154,28 +174,30 @@ func stopOwnedPicoProcesses(root string) {
 	g.stopLocked()
 }
 func stopPicoProcess(p *picoManagedProcess) {
-	if !picoAlive(p) {
+	if p == nil {
 		return
 	}
-	// A PID from disk is never a kill target; only our exec.Cmd is owned.
-	_ = p.cmd.Process.Signal(os.Interrupt)
-	select {
-	case <-p.done:
-		return
-	case <-time.After(1500 * time.Millisecond):
+	// Windows holds a Job Object, so even an already-exited leader's children
+	// remain ours. Unix signals the original live os.Process before group kill.
+	if p.control != nil {
+		p.control.kill()
 	}
-	killPicoProcessTree(p.cmd)
 	select {
 	case <-p.done:
 	case <-time.After(2 * time.Second):
 	}
+	if p.control != nil {
+		p.control.close()
+	}
 }
 func (g *picoGatewayRuntime) stopLocked() {
 	stopPicoProcess(g.launcher)
+
 	g.launcher = nil
 	g.launcherURL = ""
 	stopPicoProcess(g.gateway)
 	g.gateway = nil
+	g.verifiedGatewayPID = 0
 	if g.cancel != nil {
 		g.cancel()
 		g.cancel = nil
@@ -188,6 +210,7 @@ func (g *picoGatewayRuntime) stopLocked() {
 		g.stateLock.Close()
 		g.stateLock = nil
 	}
+	g.statusSnapshotLocked()
 }
 func freePicoPort() (int, error) {
 	l, e := net.Listen("tcp", "127.0.0.1:0")
@@ -208,10 +231,18 @@ func ensurePicoGateway(ctx context.Context, root string) (*picoGatewayRuntime, e
 	g := picoRuntime(root)
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	if picoAlive(g.gateway) && !g.restartNeeded.Load() {
-		return g, nil
+	if !g.restartNeeded.Load() {
+		if picoAlive(g.gateway) {
+			return g, nil
+		}
+		if picoAlive(g.launcher) {
+			if err := g.waitLauncherGatewayLocked(ctx); err != nil {
+				return nil, err
+			}
+			return g, nil
+		}
 	}
-	if picoAlive(g.gateway) && g.activeTurns.Load() > 0 {
+	if g.gatewayPIDLocked() > 0 && g.activeTurns.Load() > 0 {
 		return nil, errors.New("模型设置已保存；请等待当前任务完成后重试，新任务会使用新凭证")
 	}
 	g.stopLocked()
@@ -339,6 +370,7 @@ func ensurePicoGateway(ctx context.Context, root string) (*picoGatewayRuntime, e
 		return nil, err
 	}
 	g.restartNeeded.Store(false)
+	g.statusSnapshotLocked()
 	keepLock = true
 	return g, nil
 }
@@ -365,7 +397,13 @@ func startPicoOwned(root, exe, engine string, args []string) (*picoManagedProces
 	if err = cmd.Start(); err != nil {
 		return nil, fmt.Errorf("PicoClaw 启动失败：%w", err)
 	}
-	p := &picoManagedProcess{cmd: cmd, done: make(chan struct{})}
+	control, err := newPicoProcessControl(cmd)
+	if err != nil {
+		_ = cmd.Process.Kill()
+		_ = cmd.Wait()
+		return nil, err
+	}
+	p := &picoManagedProcess{cmd: cmd, done: make(chan struct{}), control: control}
 	go func() { cmd.Wait(); close(p.done) }()
 	return p, nil
 }
@@ -430,6 +468,7 @@ func picoWebUIStart(ctx context.Context, root string) (any, error) {
 			return nil, e
 		}
 	}
+	g.statusSnapshotLocked()
 	return map[string]any{"url": g.launcherURL, "opened": false, "note": "首次进入官方界面请设置本地面板密码；API Key、技能和原生会话保存在本盘。"}, nil
 }
 

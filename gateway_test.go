@@ -193,7 +193,7 @@ func TestPinnedGatewayIntegration(t *testing.T) {
 		t.Fatal(err)
 	}
 	address := ui.(map[string]any)["url"].(string)
-	client := localHTTP(5 * time.Second)
+	client := localHTTP(12 * time.Second)
 	req, _ := http.NewRequest(http.MethodPost, address+"/api/auth/setup", strings.NewReader(`{"password":"fixture-panel-password","confirm":"fixture-panel-password"}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := client.Do(req)
@@ -245,6 +245,57 @@ func TestPinnedGatewayIntegration(t *testing.T) {
 	if err == nil {
 		t.Fatalf("update CLI still enabled: %s", output)
 	}
+	// A native Restart must keep its panel alive and hand its replacement
+	// core back to the simple UI, rather than spawning another instance.
+	restartNative := func() int {
+		t.Helper()
+		panel := g.launcher
+		status, body := request("POST", "/api/gateway/restart")
+		if status != http.StatusOK {
+			t.Fatalf("native restart failed: %d %s", status, body)
+		}
+		var result struct {
+			PID int `json:"pid"`
+		}
+		if err := json.Unmarshal(body, &result); err != nil || result.PID <= 0 {
+			t.Fatalf("native restart response: %s", body)
+		}
+		t.Logf("Restart returned replacement=%d original=%d original_wait_alive=%v original_os_alive=%v launcher=%d", result.PID, g.gateway.cmd.Process.Pid, picoAlive(g.gateway), picoProcessExists(g.gateway.cmd.Process.Pid), g.launcher.cmd.Process.Pid)
+		answer, err := picoConversation(ctx, root, session, "Continue after the official Restart.", "en")
+		if err != nil || answer != "fixture-ok" {
+			t.Fatalf("simple UI after native restart: %q %v (verified=%d detected=%d original_wait_alive=%v original_os_alive=%v replacement_alive=%v)", answer, err, g.verifiedGatewayPID, g.gatewayPIDLocked(), picoAlive(g.gateway), picoProcessExists(g.gateway.cmd.Process.Pid), picoProcessExists(result.PID))
+		}
+		g.mu.Lock()
+		actualPID := g.gatewayPIDLocked()
+		g.mu.Unlock()
+		if actualPID != result.PID || g.launcher != panel || !picoAlive(panel) || g.launcherURL != address {
+			t.Fatalf("native restart was not reused: wanted PID %d, got %d", result.PID, actualPID)
+		}
+		state, err := picoGatewayInspect(root)
+		if err != nil || state.(map[string]any)["running"] != true {
+			t.Fatalf("native restart status: %#v %v", state, err)
+		}
+		status, body = request("GET", "/api/gateway/status")
+		var nativeStatus struct {
+			PID int `json:"pid"`
+		}
+		json.Unmarshal(body, &nativeStatus)
+		if status != http.StatusOK || nativeStatus.PID != result.PID {
+			t.Fatalf("panel lost replacement core: %d %s", status, body)
+		}
+		return result.PID
+	}
+	waitProcessGone := func(pid int) {
+		t.Helper()
+		deadline := time.Now().Add(5 * time.Second)
+		for picoProcessExists(pid) && time.Now().Before(deadline) {
+			time.Sleep(50 * time.Millisecond)
+		}
+		if picoProcessExists(pid) {
+			t.Fatalf("launcher replacement PID %d survived shutdown", pid)
+		}
+	}
+	firstReplacement := restartNative()
 	// Rotate while the advanced UI is already open, then submit through its
 	// authenticated WebSocket proxy and prove it uses the new credential.
 	setting.Revision = "fixture-3"
@@ -263,6 +314,7 @@ func TestPinnedGatewayIntegration(t *testing.T) {
 	if picoAlive(oldCore) || picoAlive(oldUI) {
 		t.Fatal("credential synchronization left an old process alive")
 	}
+	waitProcessGone(firstReplacement)
 	if g.launcherURL != address {
 		t.Fatal("advanced UI address changed after credential rotation")
 	}
@@ -308,12 +360,14 @@ func TestPinnedGatewayIntegration(t *testing.T) {
 	if lastAuth != "Bearer fixture-key-3" {
 		t.Fatal("advanced UI used old credential")
 	}
+	lastReplacement := restartNative()
 	core, launcher := g.gateway, g.launcher
 	stopOwnedPicoProcesses(root)
+	waitProcessGone(lastReplacement)
 	if picoAlive(core) || picoAlive(launcher) {
 		t.Fatal("owned processes survived exit")
 	}
-	t.Logf("verified persistent PID, native write, shared history, credential synchronization (both UIs), launcher auth, disabled updates and cleanup on %s/%s", runtime.GOOS, runtime.GOARCH)
+	t.Logf("verified persistent PID, native write, shared history, credential synchronization (both UIs), launcher auth, native Restart handoff (both UIs), disabled updates and cleanup on %s/%s", runtime.GOOS, runtime.GOARCH)
 }
 
 func TestPicoGatewayChatStreamingAndCancellation(t *testing.T) {

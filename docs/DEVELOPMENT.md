@@ -70,7 +70,7 @@ python scripts/build-picoclaw-pinned.py
 python scripts/package-portable.py --resources "D:\已验证工具资源" --output "D:\发盘\U-PicoClaw-0.5.1-portable-preview"
 ```
 
-1. 固定上游构建脚本校验源码归档，安装锁定前端依赖，应用禁用自升级的发行补丁，构建核心及 launcher 并更新同一平台清单。不在客户 U 盘执行此脚本，不改为下载 latest/nightly。
+1. 固定上游构建脚本校验源码归档，安装锁定前端依赖，应用禁用自升级与 Windows launcher 进程检测的发行补丁，构建核心及 launcher 并更新同一平台清单。不在客户 U 盘执行此脚本，不改为下载 latest/nightly。
 2. 先提交审核后的源码，再运行 `build.ps1`：它先运行核心测试，再生成各平台主程序和源码指纹。打包要求 Git 工作树干净且构建指纹对应同一提交。改动嵌入的 UI、工具清单或 PicoClaw hash 后都要重新构建。
 3. `package-portable.py` 是新成品的唯一组装入口。`--resources` 指向已有的工具资源源目录，`--output` 必须是不存在的新目录；只拷贝已批准资源，创建空白 `data/`，生成发行与校验信息。历史 `package-genie.py` 仅转发到同一配方，不再维护第二套组装逻辑。
 4. 复用旧母盘作为工具资源源时，不复制其个人配置、钱包或工作文件；保留旧母盘供回退。9 款便携工具与 9 项系统入口属于 Windows 工具集，不能把这些数量套用于 Mac。

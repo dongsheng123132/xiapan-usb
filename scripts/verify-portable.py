@@ -23,6 +23,7 @@ def main():
     parser.add_argument('master', type=Path)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--samples', type=int, default=7)
+    parser.add_argument('--storage-note', default='Storage not classified; record the tested machine and medium separately')
     args = parser.parse_args()
     master = args.master.resolve()
     if args.samples < 1:
@@ -103,7 +104,8 @@ def main():
                     proc.wait(timeout=10)
     result = {'version': info['version'], 'source_commit': info['source_commit'], 'master': str(master),
               'measurement': 'process creation to complete HTTP homepage; excludes browser rendering, Gateway and model latency',
-              'storage_note': 'Record actual storage separately; this test does not classify SSD versus USB',
+              'storage_note': args.storage_note,
+              'cache_note': 'Checksums read before timing; OS file caches are not cleared. This is not a cold-boot benchmark.',
               'startup_ms': durations, 'median_ms': statistics.median(durations), 'max_ms': max(durations),
               'paid_model_calls': 0, 'checks': checks}
     args.output.parent.mkdir(parents=True, exist_ok=True)

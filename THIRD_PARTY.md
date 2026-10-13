@@ -12,7 +12,7 @@
 | Explorer++ | [官方 1.4.0 x64](https://github.com/derceg/explorerplusplus/releases/tag/version-1.4.0) | GPL-3.0，保留 License.txt，附对应项目源码 |
 | Everything | [官方 1.4.1.1032 x64 ZIP](https://www.voidtools.com/downloads/) | MIT 风格许可及 PCRE 声明，完整保留官网 License.txt |
 
-PicoClaw 按固定 v0.3.1 源码构建，发行补丁仅禁用自更新入口。源代码压缩包与最终三平台 core/launcher 哈希记录在 `catalog/picoclaw.json`，构建方法为 `scripts/build-picoclaw-pinned.py`。
+PicoClaw 按固定 v0.3.1 源码构建，发行补丁禁用自更新入口，修正 Windows launcher 对已附着 Gateway 的进程存活判断，并在重启前发现已有核心，避免快速操作时重复启动。源代码压缩包与最终三平台 core/launcher 哈希记录在 `catalog/picoclaw.json`，补丁与构建方法为 `scripts/build-picoclaw-pinned.py`。
 
 `package-portable.py` 包含六款常用便携工具，以及 `catalog/emergency-tools.json` 固定的 CrystalDiskInfo 9.9.3、PhotoRec/TestDisk 7.2。CrystalDiskInfo 保留 MIT 通知；PhotoRec/TestDisk 保留 GPL 与依赖声明。来源记录、对应源码和依赖材料来自已准备的资源包，分别置于 `app/tool-sources/`、`app/extras/sources/` 与 `app/extras/licenses/`；未修改第三方维护工具二进制。
 
