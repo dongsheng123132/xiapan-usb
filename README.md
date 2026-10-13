@@ -8,7 +8,7 @@
 
 **A portable AI USB drive: a lightweight interface, your wallet and API key, local program caching, and emergency maintenance tools.**
 
-![Preview](https://img.shields.io/badge/version-0.5.1--portable--preview-8b6b33)
+![Preview](https://img.shields.io/badge/version-0.5.2--portable--preview-8b6b33)
 ![Go](https://img.shields.io/badge/Go-1.24%2B-367a8d)
 ![License](https://img.shields.io/badge/license-MIT-527c46)
 ![AI optional](https://img.shields.io/badge/AI-optional-4c7770)
@@ -28,6 +28,7 @@ Start in the existing lightweight interface. For longer tasks, skills, channels 
 | Top up when needed | Open the wallet, view the balance and open the payment page. Payment remains a user action. |
 | Local program cache | Verified PicoClaw executables can run from this computer’s cache, reducing repeated USB reads. Keys, wallet and work are not moved into that cache. |
 | Offline emergency tools | Inspect the computer and open compatible maintenance tools without a model, API key or wallet balance. |
+| Computer maintenance toolkit | 9 portable utilities + 9 Windows system entries; 5 native system entries on Mac. |
 | Your language | Switch the interface between Chinese and English; the preference travels with the drive. |
 
 The first cache fill still reads the USB drive. Home-page readiness, Gateway startup and the first model response are separate measurements; **0.3-second startup is not a verified product guarantee**. Package size depends on the selected platform binaries and tool resources. This product bundles no local-model weights or inference runtime and does not include OpenClaw.
@@ -74,6 +75,10 @@ The Windows release recipe contains **9 portable utilities and 9 system-tool ent
 
 Pinned manifests record tool files, hashes, versions and licenses. The build uses only the approved immutable files from a resource source. Driver resources and hardware identification are provided separately: automatic driver matching, installation and rollback are not implemented. Windows system tools include Task Manager, Device Manager and other OS-provided utilities.
 
+On Mac, the toolkit opens **Activity Monitor, Disk Utility, Console, System Information and Wireless Diagnostics** when present. These are macOS-provided applications, not bundled Windows utilities; real Mac launch acceptance is still pending. The toolkit and quick-start instructions are available in Chinese and English. Third-party utility interfaces keep their upstream language support.
+
+Copy all contents of a fresh master folder to the USB drive, preserving the folders. Start with `Start Windows.cmd` or `Start Mac.command`. Read the [English quick start](docs/QUICKSTART.en.md) or [中文快速入门](docs/QUICKSTART.zh-CN.md), including custom API setup for Kimi, Zhipu and Gemini. Model settings require a compatible base URL, key and tool-capable model ID; Gemini's advanced tool tasks should use the native provider in Full PicoClaw.
+
 ## One PicoClaw runtime, two interfaces
 
 | Entry | Purpose |
@@ -105,7 +110,7 @@ Maintainers need Go, PowerShell and Python 3.11+. Rebuilding the frozen official
 ```powershell
 python scripts/build-picoclaw-pinned.py
 .\scripts\build.ps1
-python scripts/package-portable.py --resources "D:\verified-tool-resources" --output "D:\release\U-PicoClaw-0.5.1-portable-preview"
+python scripts/package-portable.py --resources "D:\verified-tool-resources" --output "D:\release\U-PicoClaw-0.5.2-portable-preview"
 ```
 
 The resource path must contain the approved tool files. The output must be a new directory. The packager validates hashes, creates a clean data directory and writes release checksums; it does not copy the source drive’s personal data. Use this recipe instead of the historical package-genie script. See the [development guide](docs/DEVELOPMENT.md) for prerequisites and acceptance checks.

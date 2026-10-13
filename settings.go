@@ -167,7 +167,20 @@ func modelSettingsAction(ctx context.Context, root, id string, input map[string]
 			} `json:"message"`
 		} `json:"choices"`
 	}
-	inputBody := map[string]any{"model": next.Model, "messages": []map[string]string{{"role": "user", "content": "Call connection_check once. This is a connection test."}}, "max_tokens": cloudResponseLimit(next.Model), "stream": false, "tools": []any{map[string]any{"type": "function", "function": map[string]any{"name": "connection_check", "description": "Test the connection without performing any operation", "parameters": map[string]any{"type": "object", "properties": map[string]any{}}}}}}
+	// Match the frozen v0.3.1 OpenAI-compatible provider and our Gateway's
+	// 8192-token budget, including reasoning before the no-op tool call.
+	// A small chat-only limit can incorrectly reject a working reasoning model.
+	limitKey := "max_tokens"
+	lowerModel := strings.ToLower(next.Model)
+	if strings.Contains(lowerModel, "glm") || strings.Contains(lowerModel, "o1") || strings.Contains(lowerModel, "gpt-5") {
+		limitKey = "max_completion_tokens"
+	}
+	inputBody := map[string]any{
+		"model":    next.Model,
+		"messages": []map[string]string{{"role": "user", "content": "Call connection_check once. This is a connection test."}},
+		limitKey:   8192, "stream": false, "tool_choice": "auto",
+		"tools": []any{map[string]any{"type": "function", "function": map[string]any{"name": "connection_check", "description": "Test the connection without performing any operation", "parameters": map[string]any{"type": "object", "properties": map[string]any{}}}}},
+	}
 	if err = remoteJSON(ctx, base, "/chat/completions", "POST", key, inputBody, &response); err != nil {
 		return nil, fmt.Errorf("模型连接测试未通过：%w", err)
 	}

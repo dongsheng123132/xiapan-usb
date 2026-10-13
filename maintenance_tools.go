@@ -17,25 +17,43 @@ type BuiltinTool struct {
 	ID          string   `json:"id"`
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
+	Platform    string   `json:"platform"`
+	Category    string   `json:"category,omitempty"`
 	Program     string   `json:"-"`
 	Args        []string `json:"-"`
+	AppPaths    []string `json:"-"`
 }
 
 var builtinTools = []BuiltinTool{
-	{"memory-diagnostic", "Windows 内存诊断", "打开内存诊断选择页；是否重启由你选择。", "mdsched.exe", nil},
-	{"network-adapters", "Windows 网络适配器", "查看网络连接与适配器属性，不自动修改配置。", "control.exe", []string{"ncpa.cpl"}},
-	{"network-settings", "Windows 网络设置", "打开网络状态页；所有更改由你在系统页面选择。", "rundll32.exe", []string{"url.dll,FileProtocolHandler", "ms-settings:network-status"}},
-	{"task-manager", "Windows 任务管理器", "查看启动应用、进程与性能。", "Taskmgr.exe", nil},
-	{"disk-cleanup", "Windows 磁盘清理", "由你选择清理项与目标磁盘；不自动删除文件。", "cleanmgr.exe", nil},
-	{"device-manager", "Windows 设备管理器", "查看设备状态，手动选择已匹配的驱动；不自动装驱动。", "mmc.exe", []string{"devmgmt.msc"}},
-	{"system-info", "Windows 系统信息", "查看系统和硬件详情，工具由 Windows 提供。", "msinfo32.exe", nil},
-	{"resource-monitor", "Windows 资源监视器", "查看 CPU、磁盘、内存和网络占用。", "resmon.exe", nil},
-	{"event-viewer", "Windows 事件查看器", "查看系统与应用错误记录。", "mmc.exe", []string{"eventvwr.msc"}},
+	{ID: "memory-diagnostic", Name: "Windows 内存诊断", Description: "打开内存诊断选择页；是否重启由你选择。", Platform: "windows", Program: "mdsched.exe"},
+	{ID: "network-adapters", Name: "Windows 网络适配器", Description: "查看网络连接与适配器属性，不自动修改配置。", Platform: "windows", Program: "control.exe", Args: []string{"ncpa.cpl"}},
+	{ID: "network-settings", Name: "Windows 网络设置", Description: "打开网络状态页；所有更改由你在系统页面选择。", Platform: "windows", Program: "rundll32.exe", Args: []string{"url.dll,FileProtocolHandler", "ms-settings:network-status"}},
+	{ID: "task-manager", Name: "Windows 任务管理器", Description: "查看启动应用、进程与性能。", Platform: "windows", Program: "Taskmgr.exe"},
+	{ID: "disk-cleanup", Name: "Windows 磁盘清理", Description: "由你选择清理项与目标磁盘；不自动删除文件。", Platform: "windows", Program: "cleanmgr.exe"},
+	{ID: "device-manager", Name: "Windows 设备管理器", Description: "查看设备状态，手动选择已匹配的驱动；不自动装驱动。", Platform: "windows", Program: "mmc.exe", Args: []string{"devmgmt.msc"}},
+	{ID: "system-info", Name: "Windows 系统信息", Description: "查看系统和硬件详情，工具由 Windows 提供。", Platform: "windows", Program: "msinfo32.exe"},
+	{ID: "resource-monitor", Name: "Windows 资源监视器", Description: "查看 CPU、磁盘、内存和网络占用。", Platform: "windows", Program: "resmon.exe"},
+	{ID: "event-viewer", Name: "Windows 事件查看器", Description: "查看系统与应用错误记录。", Platform: "windows", Program: "mmc.exe", Args: []string{"eventvwr.msc"}},
+	{ID: "mac-activity-monitor", Name: "macOS 活动监视器", Description: "查看应用进程、CPU、内存、磁盘与网络占用。", Platform: "darwin", Category: "系统诊断", AppPaths: []string{"/System/Applications/Utilities/Activity Monitor.app", "/Applications/Utilities/Activity Monitor.app"}},
+	{ID: "mac-disk-utility", Name: "macOS 磁盘工具", Description: "查看磁盘与卷；急救、分区或抹除由你在工具内选择，不自动执行。", Platform: "darwin", Category: "磁盘维护", AppPaths: []string{"/System/Applications/Utilities/Disk Utility.app", "/Applications/Utilities/Disk Utility.app"}},
+	{ID: "mac-console", Name: "macOS 控制台", Description: "查看系统和应用日志，辅助定位错误。", Platform: "darwin", Category: "系统诊断", AppPaths: []string{"/System/Applications/Utilities/Console.app", "/Applications/Utilities/Console.app"}},
+	{ID: "mac-system-information", Name: "macOS 系统信息", Description: "查看硬件、软件与网络配置详情。", Platform: "darwin", Category: "系统诊断", AppPaths: []string{"/System/Applications/Utilities/System Information.app", "/Applications/Utilities/System Information.app"}},
+	{ID: "mac-wireless-diagnostics", Name: "macOS 无线诊断", Description: "打开系统无线网络诊断助手；是否开始诊断由你选择。", Platform: "darwin", Category: "网络应急", AppPaths: []string{"/System/Library/CoreServices/Applications/Wireless Diagnostics.app", "/System/Library/CoreServices/Wireless Diagnostics.app"}},
+}
+
+func builtinToolsForPlatform(platform string) []BuiltinTool {
+	tools := []BuiltinTool{}
+	for _, tool := range builtinTools {
+		if tool.Platform == platform {
+			tools = append(tools, tool)
+		}
+	}
+	return tools
 }
 
 func builtinToolIDs() []string {
 	ids := []string{}
-	for _, t := range builtinTools {
+	for _, t := range builtinToolsForPlatform(runtime.GOOS) {
 		ids = append(ids, t.ID)
 	}
 	for _, t := range portableTools() {
@@ -57,10 +75,34 @@ func builtinToolName(id string) string {
 	return id
 }
 func builtinCommand(t BuiltinTool) (string, []string, bool) {
-	if runtime.GOOS != "windows" {
+	return builtinCommandForPlatform(t, runtime.GOOS, nativeSystemDir(), os.Stat)
+}
+
+// Command inputs come only from the embedded registry. The stat dependency lets
+// platform availability be checked without launching tools or changing a host.
+func builtinCommandForPlatform(t BuiltinTool, platform, systemDir string, stat func(string) (os.FileInfo, error)) (string, []string, bool) {
+	if t.Platform != platform {
 		return "", nil, false
 	}
-	dir := nativeSystemDir()
+	if platform == "darwin" {
+		const program = "/usr/bin/open"
+		info, err := stat(program)
+		if err != nil || !info.Mode().IsRegular() {
+			return "", nil, false
+		}
+		for _, app := range t.AppPaths {
+			info, err := stat(app)
+			if err == nil && info.IsDir() {
+				// Open this exact system bundle, without passing repair arguments.
+				return program, []string{app}, true
+			}
+		}
+		return "", nil, false
+	}
+	if platform != "windows" {
+		return "", nil, false
+	}
+	dir := systemDir
 	if dir == "" {
 		return "", nil, false
 	}
@@ -75,7 +117,7 @@ func builtinCommand(t BuiltinTool) (string, []string, bool) {
 		if !filepath.IsAbs(path) {
 			continue
 		} // Fixed literal switches/URIs are not file paths.
-		info, err := os.Stat(path)
+		info, err := stat(path)
 		if err != nil || !info.Mode().IsRegular() {
 			return "", nil, false
 		}
@@ -84,9 +126,13 @@ func builtinCommand(t BuiltinTool) (string, []string, bool) {
 }
 func toolCatalog(root string) (any, error) {
 	rows := []any{}
-	for _, t := range builtinTools {
+	for _, t := range builtinToolsForPlatform(runtime.GOOS) {
 		_, _, ready := builtinCommand(t)
-		rows = append(rows, map[string]any{"id": t.ID, "name": t.Name, "description": t.Description, "ready": ready, "source": "当前 Windows 系统", "platform": "windows", "action": "tools.launch"})
+		source := "当前 Windows 系统"
+		if t.Platform == "darwin" {
+			source = "当前 macOS 系统"
+		}
+		rows = append(rows, map[string]any{"id": t.ID, "name": t.Name, "description": t.Description, "category": t.Category, "ready": ready, "source": source, "platform": t.Platform, "action": "tools.launch"})
 	}
 	b, err := assets.ReadFile("catalog/maintenance.json")
 	if err != nil {

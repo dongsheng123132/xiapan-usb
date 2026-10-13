@@ -53,6 +53,16 @@ def main():
     durations = []
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     checks = {'checksums': len(sums), 'empty_shipping_data': True}
+    for english, chinese in [('Start Windows.cmd', '开始使用.cmd'), ('Start Mac.command', '启动 Mac.command'), ('Verify Files.ps1', '校验母盘.ps1')]:
+        assert (master / english).read_bytes() == (master / chinese).read_bytes(), f'Launcher drift: {english}'
+    windows_script = (master / 'Start Windows.cmd').read_bytes()
+    assert b'\r\r\n' not in windows_script and b'chcp 65001' in windows_script
+    mac_script = (master / 'Start Mac.command').read_text(encoding='utf-8')
+    for arch, marker in [('arm64', '__ARM_SHA__'), ('x64', '__INTEL_SHA__')]:
+        assert marker not in mac_script and digest(master / f'app/bin/xiapan-macos-{arch}') in mac_script
+    for guide, source in [('START_HERE.md', 'QUICKSTART.en.md'), ('先看这里.md', 'QUICKSTART.zh-CN.md')]:
+        assert (master / guide).read_bytes() == (master / 'app/source/xiapan-usb/docs' / source).read_bytes()
+    checks['bilingual_launchers_and_guides'] = True
     with tempfile.TemporaryDirectory(prefix='xiapan-verify-') as scratch:
         for index in range(args.samples):
             root = Path(scratch) / str(index)
@@ -91,6 +101,7 @@ def main():
                 assert not action('models.start', {'confirmed': True})['ok']
                 catalog = action('tools.catalog')
                 assert catalog['ok'] and len(catalog['data']['portable_tools']) == 9
+                assert len(catalog['data']['builtin_tools']) == 9 and all(t['platform'] == 'windows' for t in catalog['data']['builtin_tools'])
                 assert not list(root.rglob('device.json')), 'Read-only startup created a wallet'
                 checks.update({'lazy_gateway': True, 'offline_guide': True, 'retired_local_model': True,
                                'nine_portable_tools_registered': True, 'no_wallet_created': True})

@@ -15,7 +15,13 @@ const I18n = (() => {
     // A leading completion tick is a status glyph, not part of the label.
     const tick = key.startsWith('✓ ') ? '✓ ' : '';
     const body = tick ? key.slice(2) : key;
-    const translated = dictionary[key] ?? (dictionary[body] ? tick + dictionary[body] : key);
+    let translated = dictionary[key] ?? (dictionary[body] ? tick + dictionary[body] : key);
+    // Known backend error prefixes can include a variable service error after
+    // the colon. Translate the owned prefix and preserve that error evidence.
+    if (translated === key && key.includes('：')) {
+      const split = key.indexOf('：') + 1, prefix = key.slice(0, split);
+      if (dictionary[prefix]) translated = dictionary[prefix] + text(key.slice(split));
+    }
     return translated.replace(/\{(\w+)\}/g, (match, key) => Object.hasOwn(values, key) ? String(values[key]) : match);
   }
   function bind(node, source, values = {}, attribute = '') {
@@ -37,8 +43,8 @@ const I18n = (() => {
       if (/[\u3400-\u9fff]/.test(node.textContent) && !node.parentElement.closest('script,style,pre,code,[data-no-i18n]')) nodes.push(node);
     }
     for (const node of nodes) bind(node, node.textContent);
-    // data-command and data-prompt carry values sent to the backend verbatim,
-    // so only genuinely presentational attributes are translated.
+    // Keep protocol commands unchanged. Natural-language starter prompts are
+    // translated only when clicked; editable values are never rebound.
     for (const node of document.querySelectorAll('[placeholder],[aria-label],[title]')) {
       for (const attr of ['placeholder', 'aria-label', 'title']) {
         if (/[\u3400-\u9fff]/.test(node.getAttribute(attr) || '')) bind(node, node.getAttribute(attr), {}, attr);

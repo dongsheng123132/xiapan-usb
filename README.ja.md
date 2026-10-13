@@ -8,7 +8,7 @@
 
 **軽量な AI インターフェース、持ち運べるウォレットと API キー、PC 上のプログラムキャッシュ、オフラインのメンテナンスツール。**
 
-![Preview](https://img.shields.io/badge/version-0.5.1--portable--preview-8b6b33)
+![Preview](https://img.shields.io/badge/version-0.5.2--portable--preview-8b6b33)
 ![Go](https://img.shields.io/badge/Go-1.24%2B-367a8d)
 ![License](https://img.shields.io/badge/license-MIT-527c46)
 ![AI optional](https://img.shields.io/badge/AI-optional-4c7770)
@@ -64,6 +64,8 @@ Windows の作成手順には **ポータブルツール 9 種と標準ツール
 
 バージョン、ファイル、SHA-256、ライセンスを固定マニフェストに記録し、許可したファイルだけをパッケージにコピーします。ハードウェア識別とドライバーの準備機能はありますが、ドライバーの自動照合・インストール・ロールバックは未実装です。
 
+Mac には Activity Monitor、Disk Utility、Console、System Information、Wireless Diagnostics の 5 つの OS 標準ツールへの入口があります。Mac 実機での起動確認は未完了です。[English quick start](docs/QUICKSTART.en.md) / [中文快速入门](docs/QUICKSTART.zh-CN.md) に USB へのコピー手順と API 設定を記載しています。
+
 ## PicoClaw は一つ、画面は二つ
 
 | 入口 | 用途 |
@@ -95,7 +97,7 @@ PicoClaw のツールは現在の OS ユーザーの権限で動作します。G
 ```powershell
 python scripts/build-picoclaw-pinned.py
 .\scripts\build.ps1
-python scripts/package-portable.py --resources "D:\verified-tool-resources" --output "D:\release\U-PicoClaw-0.5.1-portable-preview"
+python scripts/package-portable.py --resources "D:\verified-tool-resources" --output "D:\release\U-PicoClaw-0.5.2-portable-preview"
 ```
 
 リソース元には固定マニフェストのツールファイルを用意し、出力にはまだ存在しないディレクトリを指定します。個人データをコピーせず、空の data と検証用ハッシュを生成します。新しいパッケージにはこの手順を使用してください。詳細は[開発ガイド（中国語）](docs/DEVELOPMENT.md)を参照してください。

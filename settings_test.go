@@ -137,6 +137,67 @@ func TestModelSettingsCorruptionAndModelToolBoundary(t *testing.T) {
 	}
 }
 
+func TestCompatibleModelPreflightMatchesPinnedGateway(t *testing.T) {
+	for _, tc := range []struct{ name, base, model, limit string }{
+		{"kimi", "/v1", "kimi-k2-fixture", "max_tokens"},
+		{"zhipu", "/api/paas/v4", "GLM-fixture", "max_completion_tokens"},
+		{"gemini", "/v1beta/openai", "gemini-fixture", "max_tokens"},
+		{"reasoning", "/v1", "gpt-5-fixture", "max_completion_tokens"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			calls := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				calls++
+				if r.Method != "POST" || r.URL.Path != tc.base+"/chat/completions" || r.Header.Get("Authorization") != "Bearer sk-fixture" {
+					t.Errorf("unexpected provider request: %s %s", r.Method, r.URL.Path)
+				}
+				var body map[string]any
+				if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+					t.Error(err)
+				}
+				otherLimit := "max_tokens"
+				if tc.limit == otherLimit {
+					otherLimit = "max_completion_tokens"
+				}
+				if body["model"] != tc.model || body[tc.limit] != float64(8192) || body[otherLimit] != nil || body["stream"] != false || body["tool_choice"] != "auto" {
+					t.Errorf("preflight differs from pinned provider: %#v", body)
+				}
+				toolJSON, _ := json.Marshal(body["tools"])
+				var registered []struct {
+					Type     string `json:"type"`
+					Function struct {
+						Name string `json:"name"`
+					} `json:"function"`
+				}
+				if err := json.Unmarshal(toolJSON, &registered); err != nil || len(registered) != 1 || registered[0].Type != "function" || registered[0].Function.Name != "connection_check" {
+					t.Errorf("preflight exposed a real tool: %s", toolJSON)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.Write([]byte(`{"choices":[{"message":{"tool_calls":[{"function":{"name":"connection_check"}}]}}]}`))
+			}))
+			defer server.Close()
+			input := map[string]any{"expected_revision": "initial", "source": "custom", "base_url": server.URL + tc.base + "/", "api_key": "sk-fixture", "model": tc.model}
+			if _, err := modelSettingsAction(context.Background(), root, "settings.model.test", input); err != nil {
+				t.Fatal(err)
+			}
+			if calls != 1 {
+				t.Fatalf("expected one test request, got %d", calls)
+			}
+			state, err := selectedModel(root)
+			if err != nil || state.Revision != "initial" {
+				t.Fatal("connection test persisted credentials")
+			}
+			if _, err := modelSettingsAction(context.Background(), root, "settings.model.save", input); err != nil {
+				t.Fatal(err)
+			}
+			if calls != 1 {
+				t.Fatal("saving called the model")
+			}
+		})
+	}
+}
+
 func TestCompactPackageRuntimeInventory(t *testing.T) {
 	root := t.TempDir()
 	p := filepath.Join(root, "app", "runtime", "picoclaw", "windows-x64", "picoclaw.exe")

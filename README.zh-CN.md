@@ -6,9 +6,9 @@
 
 # 虾盘 · U-PicoClaw 随身 AI 优盘
 
-**轻量启动、钱包与 Key 随盘、本机程序缓存，再带一套断网应急维护工具。**
+**随身 AI、钱包随盘、程序缓存、断网应急、电脑维护工具包。**
 
-![Preview](https://img.shields.io/badge/version-0.5.1--portable--preview-8b6b33)
+![Preview](https://img.shields.io/badge/version-0.5.2--portable--preview-8b6b33)
 ![Go](https://img.shields.io/badge/Go-1.24%2B-367a8d)
 ![License](https://img.shields.io/badge/license-MIT-527c46)
 ![AI optional](https://img.shields.io/badge/AI-optional-4c7770)
@@ -28,6 +28,7 @@
 | 按需充值 | 钱包内查看余额并打开充值页，支付由用户完成。 |
 | 本机程序缓存 | 已校验的 PicoClaw 程序可缓存在当前电脑，减少重复读取 U 盘；Key、钱包、对话与工作文件继续随盘保存。 |
 | 断网应急 | 无需模型、API Key 或钱包额度，直接检测电脑并打开兼容工具。 |
+| 电脑维护工具包 | Windows 9 款便携工具 + 9 个系统入口；Mac 5 个原生系统入口。 |
 | 中英双语 | 整个界面可切换中英文，选择随盘保存，AI 按所选语言回答。 |
 
 首次填充缓存仍需读取 U 盘。首屏可用、Gateway 就绪与首次 AI 回答分别计时，**没有把“0.3 秒启动”作为已经验证的承诺**。成品体积取决于平台程序和工具资源。本产品不再携带本地模型权重与推理运行时，也不加入 OpenClaw。
@@ -74,6 +75,10 @@ Windows 发行配方包含 **9 款便携工具和 9 项系统工具入口**，�
 
 工具的版本、文件、SHA-256 与许可证记录在固定清单中，制盘只复用资源源目录中的已核验文件。驱动资源和硬件识别单独提供；自动匹配、安装与回滚尚未实现。系统工具入口包括任务管理器、设备管理器等 Windows 自带程序。
 
+Mac 侧打开存在于系统中的 **活动监视器、磁盘工具、控制台、系统信息和无线诊断**。这是 5 个 macOS 自带程序入口，尚待 Mac 实机启动验收。主界面、工具用途、客户说明提供中英文；第三方工具界面语言以其上游能力为准。
+
+将全新母盘文件夹里的内容完整复制到 U 盘即可，保留目录结构。双击 `开始使用.cmd` 或 `启动 Mac.command`，参见 [中文快速入门](docs/QUICKSTART.zh-CN.md) / [English quick start](docs/QUICKSTART.en.md)。客户可填写兼容 API 地址、自己的 Key 和支持工具调用的模型 ID；Kimi、智谱等按服务商兼容接口接入，Gemini 复杂工具任务建议在完整 PicoClaw 配置原生 provider。
+
 ## 一套 PicoClaw，两个界面入口
 
 | 入口 | 用途 |
@@ -105,7 +110,7 @@ PicoClaw 工具功能按当前系统用户权限运行。维护动作由界面�
 ```powershell
 python scripts/build-picoclaw-pinned.py
 .\scripts\build.ps1
-python scripts/package-portable.py --resources "D:\已验证工具资源" --output "D:\发盘\U-PicoClaw-0.5.1-portable-preview"
+python scripts/package-portable.py --resources "D:\已验证工具资源" --output "D:\发盘\U-PicoClaw-0.5.2-portable-preview"
 ```
 
 资源目录需有清单要求的工具文件，输出必须是尚不存在的新目录。脚本校验资源、创建空白 data 并生成成品校验清单，不复制来源盘的个人数据。新母盘只使用这条配方，历史 package-genie 不再作为本产品制盘入口。准备要求与验收见 [开发指南](docs/DEVELOPMENT.md)。

@@ -148,29 +148,31 @@ def main():
         source = checked_path(ROOT, relative)
         if source.is_file() and not source.name.startswith('.env'):
             copy_checked(source, target / 'app/source/xiapan-usb' / relative)
-    (target / '开始使用.cmd').write_text('@echo off\r\nchcp 65001 >nul\r\nstart "" "%~dp0虾盘.exe"\r\n', encoding='utf-8')
+    windows_script = '@echo off\r\nchcp 65001 >nul\r\nstart "" "%~dp0虾盘.exe"\r\n'
+    for name in ['开始使用.cmd', 'Start Windows.cmd']:
+        (target / name).write_text(windows_script, encoding='utf-8', newline='')
     bootstrap_arm = digest(target / 'app/bin/xiapan-macos-arm64')
     bootstrap_intel = digest(target / 'app/bin/xiapan-macos-x64')
     mac_script = '''#!/bin/sh
 set -eu
 if ! ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd); then
-  echo '无法访问U盘。请在系统设置的隐私与安全性中，允许当前终端/启动程序访问文件与文件夹或可移除宗卷。'
+  echo '无法访问U盘 / Cannot access USB drive. Allow Terminal access to removable volumes in System Settings > Privacy & Security.'
   exit 1
 fi
-case "$(uname -m)" in arm64) BIN="$ROOT/app/bin/xiapan-macos-arm64"; SHA="__ARM_SHA__";; x86_64) BIN="$ROOT/app/bin/xiapan-macos-x64"; SHA="__INTEL_SHA__";; *) echo '不支持此 Mac 架构'; exit 1;; esac
+case "$(uname -m)" in arm64) BIN="$ROOT/app/bin/xiapan-macos-arm64"; SHA="__ARM_SHA__";; x86_64) BIN="$ROOT/app/bin/xiapan-macos-x64"; SHA="__INTEL_SHA__";; *) echo '不支持此 Mac 架构 / Unsupported Mac architecture'; exit 1;; esac
 # Copy only the public executable. Private state always stays at --root/data.
 CACHE="$HOME/Library/Caches/Xiapan/bootstrap"
 for PART in "$HOME/Library/Caches" "$HOME/Library/Caches/Xiapan" "$CACHE"; do
-  [ ! -L "$PART" ] || { echo '缓存目录不能是符号链接'; exit 1; }
+  [ ! -L "$PART" ] || { echo '缓存目录不能是符号链接 / Cache directory cannot be a symbolic link'; exit 1; }
 done
 mkdir -p "$CACHE"
 DEST="$CACHE/xiapan-$SHA"
-[ ! -L "$DEST" ] || { echo '缓存程序不能是符号链接'; exit 1; }
+[ ! -L "$DEST" ] || { echo '缓存程序不能是符号链接 / Cached program cannot be a symbolic link'; exit 1; }
 if [ ! -f "$DEST" ] || [ "$(shasum -a 256 "$DEST" | awk '{print $1}')" != "$SHA" ]; then
   TEMP="$DEST.tmp.$$"
   trap 'rm -f "$TEMP"' EXIT HUP INT TERM
   cp "$BIN" "$TEMP"
-  [ "$(shasum -a 256 "$TEMP" | awk '{print $1}')" = "$SHA" ] || { echo '程序校验失败'; exit 1; }
+  [ "$(shasum -a 256 "$TEMP" | awk '{print $1}')" = "$SHA" ] || { echo '程序校验失败 / Program checksum mismatch'; exit 1; }
   chmod 700 "$TEMP"
   mv "$TEMP" "$DEST"
   trap - EXIT HUP INT TERM
@@ -179,32 +181,22 @@ chmod 700 "$DEST"
 exec "$DEST" --root "$ROOT"
 '''
     mac_script = mac_script.replace('__ARM_SHA__', bootstrap_arm).replace('__INTEL_SHA__', bootstrap_intel)
-    (target / '启动 Mac.command').write_text(mac_script, encoding='utf-8', newline='\n')
-    os.chmod(target / '启动 Mac.command', 0o755)
-    readme = '''# 虾盘 · U-PicoClaw 随身 AI 盘
-
-Windows：双击“虾盘.exe”。Mac：打开“启动 Mac.command”。首次使用先选择“设备钱包 / 充值”或填写自己的 API Key。设置、凭证、对话留在本盘 data/。
-
-自建界面用于日常快速对话；点击“完整 PicoClaw”打开官方高级界面，按页面设置本地访问密码。两个界面使用同一个持久 Gateway。第一次启动 AI 会验证并复制固定程序到电脑缓存，之后复用本机缓存；不把钱包、Key 或工作文件复制到程序缓存。拔盘前在页面点击“退出”，再关闭已打开的维护工具。
-
-Mac 首次使用：exFAT 的权限和系统信任提示取决于目标电脑。可在终端输入 `sh `（末尾一个空格），拖入本盘的“启动 Mac.command”，按回车。系统安全提示按 macOS 的“隐私与安全性”流程允许本次可信程序；此脚本不会关闭 Gatekeeper 或批量删除 quarantine。Mac 成品仍需目标机器验收。
-
-断网：点击“应急工具”，可检查系统、网络设备及驱动，打开盘内传统工具。Windows 工具不适用于 Mac。离线网卡资源位于 drivers/windows-x64/3dp-net-21.01/，是 2021 年旧库，使用前阅读其中说明，按硬件 ID、系统和签名核对。当前不会自动匹配/安装驱动，也不是可引导的 WinPE 救援盘。
-
-不带本地大模型，不含 OpenClaw，不在客户盘自动更新。软件启动速度与模型联网响应速度分开计算；未对所有 U 盘承诺 0.3 秒。
-
-请自行备份钱包凭证。钱包余额跟随凭证，在另一台电脑插入本盘仍可使用。发货模板 data/ 为空，不能把自己使用过的 data/ 复制给客户。
-'''
-    (target / '先看这里.md').write_text(readme, encoding='utf-8')
-    (target / '校验母盘.ps1').write_text('''$ErrorActionPreference='Stop'
+    for name in ['启动 Mac.command', 'Start Mac.command']:
+        (target / name).write_text(mac_script, encoding='utf-8', newline='\n')
+        os.chmod(target / name, 0o755)
+    for source, name in [('QUICKSTART.zh-CN.md', '先看这里.md'), ('QUICKSTART.en.md', 'START_HERE.md')]:
+        copy_checked(ROOT / 'docs' / source, target / name)
+    verify_script = '''$ErrorActionPreference='Stop'
 $base=Split-Path -Parent $MyInvocation.MyCommand.Path
 foreach($line in Get-Content -LiteralPath (Join-Path $base 'SHA256SUMS') -Encoding UTF8){
   $parts=$line -split '  ',2
   $path=Join-Path $base $parts[1]
-  if((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -ne $parts[0]){throw "校验失败: $($parts[1])"}
+  if((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -ne $parts[0]){throw "校验失败 / Checksum mismatch: $($parts[1])"}
 }
-Write-Host '固定程序与资源校验通过；用户 data/ 不在母盘校验范围内。'
-''', encoding='utf-8-sig')
+Write-Host '固定程序与资源校验通过 / Programs and resources verified. User data/ is excluded.'
+'''
+    for name in ['校验母盘.ps1', 'Verify Files.ps1']:
+        (target / name).write_text(verify_script, encoding='utf-8-sig')
     info = {'edition': 'U-PicoClaw portable AI + emergency toolkit', 'version': build_version,
             'built_at': datetime.now(timezone.utc).isoformat(),
             'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT).decode().strip(),

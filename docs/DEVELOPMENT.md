@@ -4,7 +4,7 @@
 
 ## 当前产品与启动链路
 
-产品范围以 [PRODUCT.md](PRODUCT.md) 为准。`0.5.1-portable-preview` 保留自建轻量首页，并在用户点击“完整 PicoClaw”时打开固定版官方工作台；两个界面接入同一受管理的持久 Gateway。
+产品范围以 [PRODUCT.md](PRODUCT.md) 为准。`0.5.2-portable-preview` 保留自建轻量首页，并在用户点击“完整 PicoClaw”时打开固定版官方工作台；两个界面接入同一受管理的持久 Gateway。
 
 - 首页立即可用，语言、设置、历史与只读状态在后台加载。不在首页自动开户、查余额、检查升级、扫描硬件或启动完整工作台。
 - `pico.ui.open` 按需打开官方界面，`pico.status` 只读查询；关闭浏览器页面不结束 Gateway，明确“退出”才停止本次启动的进程。
@@ -53,7 +53,7 @@ git push -u origin codex/macos-portable
 
 - 词典放在 `web/locales.json` 顶层，不能放 `web/locales/` 子目录：`main.go` 的 `//go:embed web/*` 不递归，子目录不会进二进制。
 - 静态标签由 `i18n.js` 扫描中文文本节点自动绑定；动态文案用 `ui(node, 源文)`、`msg(源文, 变量)`，不要用 `t()` 拼好再当 `raw` 塞进去，否则切换语言不会重译。
-- `data-command`、`data-prompt` 是发给后端的原值，**不参与翻译**；`/启动项` 这类斜杠命令始终用中文，后端按字面匹配。
+- `data-command` 是动作协议原值，**不参与翻译**；`/启动项` 这类斜杠命令始终用中文，后端按字面匹配。`data-prompt` 属性保留中文词典 key，点击时按当前语言填入自然语言示例；英文工具搜索同时匹配翻译后的名称、分类和用途。
 - 对话内容、文件路径、真实 JSON 证据、用户自己起的会话标题都不翻译。
 - Go 侧的用户可见文案目前保持中文，由前端词典负责显示层翻译；AI 回答语言由 `requestLanguage` → `responseLanguage` 决定。
 - 改了词典或 `web/` 下任何文件都要重新构建：资源是编译期嵌入的，不重新构建不会生效。
@@ -67,13 +67,15 @@ git push -u origin codex/macos-portable
 ```powershell
 python scripts/build-picoclaw-pinned.py
 .\scripts\build.ps1
-python scripts/package-portable.py --resources "D:\已验证工具资源" --output "D:\发盘\U-PicoClaw-0.5.1-portable-preview"
+python scripts/package-portable.py --resources "D:\已验证工具资源" --output "D:\发盘\U-PicoClaw-0.5.2-portable-preview"
 ```
 
 1. 固定上游构建脚本校验源码归档，安装锁定前端依赖，应用禁用自升级与 Windows launcher 进程检测的发行补丁，构建核心及 launcher 并更新同一平台清单。不在客户 U 盘执行此脚本，不改为下载 latest/nightly。
 2. 先提交审核后的源码，再运行 `build.ps1`：它先运行核心测试，再生成各平台主程序和源码指纹。打包要求 Git 工作树干净且构建指纹对应同一提交。改动嵌入的 UI、工具清单或 PicoClaw hash 后都要重新构建。
 3. `package-portable.py` 是新成品的唯一组装入口。`--resources` 指向已有的工具资源源目录，`--output` 必须是不存在的新目录；只拷贝已批准资源，创建空白 `data/`，生成发行与校验信息。历史 `package-genie.py` 仅转发到同一配方，不再维护第二套组装逻辑。
-4. 复用旧母盘作为工具资源源时，不复制其个人配置、钱包或工作文件；保留旧母盘供回退。9 款便携工具与 9 项系统入口属于 Windows 工具集，不能把这些数量套用于 Mac。
+4. 复用旧母盘作为工具资源源时，不复制其个人配置、钱包或工作文件；保留旧母盘供回退。Windows 为 9 款便携工具与 9 项系统入口，Mac 为 5 个系统入口。客户中英快速入门以 `docs/QUICKSTART.*.md` 为源，由同一配方复制到盘根；中英文启动文件共用生成模板。
+
+自带 API 接受兼容 Base URL、Key 和模型 ID；连接预检跟随固定 PicoClaw v0.3.1 OpenAI provider 的 token 参数和 8192 预算，不以低预算聊天测试代替工具调用验证。保存不请求模型，测试只提供一个无操作的 `connection_check` 工具。单元测试用本地假服务验证 Kimi/智谱/Gemini 形式的路径、鉴权隔离与参数，不冒充真实服务验收。Gemini 多轮工具的签名兼容性受固定上游限制，复杂任务应在官方界面配置原生 Gemini。
 
 ## 验收边界
 

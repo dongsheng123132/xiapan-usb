@@ -1,10 +1,10 @@
 /* The list is a view of tools.catalog. Execution still uses tools.launch. */
 function renderToolLibrary(data) {
   const root=$('tool-collection');root.replaceChildren();
-  const nativeCategories={'task-manager':'启动与进程','resource-monitor':'启动与进程','disk-cleanup':'磁盘与硬件','device-manager':'磁盘与硬件','system-info':'磁盘与硬件','event-viewer':'启动与进程'};
+  const nativeCategories={'task-manager':'启动与进程','resource-monitor':'启动与进程','disk-cleanup':'磁盘与硬件','device-manager':'磁盘与硬件','system-info':'磁盘与硬件','event-viewer':'启动与进程','memory-diagnostic':'磁盘与硬件','network-adapters':'网络与连接','network-settings':'网络与连接','mac-activity-monitor':'系统诊断','mac-disk-utility':'磁盘维护','mac-console':'系统诊断','mac-system-information':'系统诊断','mac-wireless-diagnostics':'网络应急'};
   const rows=[
     ...(data.portable_tools||[]).map(t=>({...t,kind:'portable',status:t.ready?'已内置':'未准备'})),
-    ...(data.builtin_tools||[]).map(t=>({...t,kind:'system',category:nativeCategories[t.id]||'系统工具',status:t.ready?'系统自带':'此系统不可用',portable_note:'由当前电脑的系统提供，不占 U 盘工具包空间。'})),
+    ...(data.builtin_tools||[]).map(t=>({...t,kind:'system',category:t.category||nativeCategories[t.id]||'系统工具',status:t.ready?'系统自带':'此系统不可用',portable_note:'由当前电脑的系统提供，不占 U 盘工具包空间。'})),
     ...(data.library_tools||[]).map(t=>({...t,kind:'download',status:'待下载'})),
     ...(data.resources||[]).map(t=>({...t,kind:'download',ready:false,status:'需另行准备',category:t.id==='network-driver'?'网络与连接':'启动与救援',reason:t.status,portable_note:t.description}))
   ];
@@ -17,11 +17,12 @@ function renderToolLibrary(data) {
   filters.append(search,category,state);
   const count=el('p',undefined,'library-count'),list=el('div',undefined,'tool-list');count.setAttribute('role','status');attr(list,'aria-label','工具列表');
   root.append(intro,filters,count,list);
+  const searchable=tool=>[tool.name,tool.description,tool.category,tool.portable_note].flatMap(value=>[value,t(value)]).join(' ').toLocaleLowerCase();
   function draw(){
     list.replaceChildren();const query=search.value.trim().toLocaleLowerCase();
     const shown=rows.filter(t=>(category.value==='全部分类'||t.category===category.value)&&
       (state.value==='all'||state.value==='ready'&&t.ready||state.value==='portable'&&t.kind==='portable'&&t.ready||state.value==='download'&&!t.ready)&&
-      (!query||[t.name,t.description,t.category,t.portable_note].join(' ').toLocaleLowerCase().includes(query)));
+      (!query||searchable(t).includes(query)));
     ui(count,msg('显示 {shown} / {total} 项',{shown:shown.length,total:rows.length}));
     for(const tool of shown){
       const row=el('article',undefined,'tool-row');row.dataset.toolId=tool.id;
