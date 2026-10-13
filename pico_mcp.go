@@ -33,6 +33,29 @@ func maintenanceToolSchema() map[string]any {
 // included in model context; calls mutate the session held by the parent, not a
 // second copy in another process. HTTP JSON responses are Streamable HTTP MCP.
 func startPicoMCP(ctx context.Context, root string, session *ChatSession) (map[string]any, func(), error) {
+	return startPicoMCPEndpoint(ctx, maintenanceToolSchema(), func(input map[string]any) any {
+		return modelTool(ctx, root, session, str(input, "action"), input)
+	})
+}
+
+// A persistent endpoint routes only to live simple-UI conversations; the
+// binding expires after each turn and cannot grant a confirmed maintenance write.
+func startGatewayPicoMCP(ctx context.Context, root string, g *picoGatewayRuntime) (map[string]any, func(), error) {
+	schema := maintenanceToolSchema()
+	schema["properties"].(map[string]any)["conversation_id"] = map[string]any{"type": "string"}
+	schema["required"] = []string{"action", "conversation_id"}
+	return startPicoMCPEndpoint(ctx, schema, func(input map[string]any) any {
+		g.bindMu.Lock()
+		defer g.bindMu.Unlock()
+		session := g.bindings[str(input, "conversation_id")]
+		if session == nil {
+			return map[string]any{"error": "维护确认会话未激活；请从虾盘简洁界面发起维护任务"}
+		}
+		return modelTool(ctx, root, session, str(input, "action"), input)
+	})
+}
+
+func startPicoMCPEndpoint(ctx context.Context, schema map[string]any, execute func(map[string]any) any) (map[string]any, func(), error) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return nil, nil, err
@@ -46,7 +69,6 @@ func startPicoMCP(ctx context.Context, root string, session *ChatSession) (map[s
 	host := listener.Addr().String()
 	var mu sync.Mutex
 	cache := map[string]any{}
-	calls := 0
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Host != host || r.URL.Path != "/mcp" || r.Header.Get("Origin") != "" || subtle.ConstantTimeCompare([]byte(r.Header.Get("Authorization")), []byte("Bearer "+token)) != 1 {
 			http.Error(w, "forbidden", 403)
@@ -95,7 +117,7 @@ func startPicoMCP(ctx context.Context, root string, session *ChatSession) (map[s
 		case "ping":
 			result = map[string]any{}
 		case "tools/list":
-			result = map[string]any{"tools": []any{map[string]any{"name": "maintenance_action", "description": "读取当前电脑和本盘资源。安装、保存报告、打开系统工具只生成待用户确认卡片；不得把申请说成执行完成。", "inputSchema": maintenanceToolSchema()}}}
+			result = map[string]any{"tools": []any{map[string]any{"name": "maintenance_action", "description": "读取当前电脑和本盘资源。安装、保存报告、打开系统工具只生成待用户确认卡片；不得把申请说成执行完成。", "inputSchema": schema}}}
 		case "tools/call":
 			if v, ok := cache[string(request.ID)]; ok {
 				result = v
@@ -109,18 +131,16 @@ func startPicoMCP(ctx context.Context, root string, session *ChatSession) (map[s
 				rpcError(-32602, "unknown tool or arguments")
 				return
 			}
-			if calls >= 12 {
-				rpcError(-32602, "本轮维护动作已达上限，请继续对话")
-				return
-			}
-			calls++
-			output := modelTool(ctx, root, session, str(params.Arguments, "action"), params.Arguments)
+			output := execute(params.Arguments)
 			b, err := json.Marshal(compactEvidence(output))
 			if err != nil {
 				rpcError(-32603, "cannot encode evidence")
 				return
 			}
 			result = map[string]any{"content": []any{map[string]any{"type": "text", "text": string(b)}}}
+			if len(cache) >= 1024 {
+				clear(cache)
+			}
 			cache[string(request.ID)] = result
 		default:
 			rpcError(-32601, "method not found")

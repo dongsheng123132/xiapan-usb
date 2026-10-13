@@ -20,10 +20,11 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 	"time"
 )
 
-const version = "0.4.2-preview"
+const version = "0.5.1-portable-preview"
 
 //go:embed web/* skills/*/SKILL.md catalog/*.json
 var assets embed.FS
@@ -43,6 +44,13 @@ type Action struct {
 }
 
 var actions = []Action{
+	{"pico.status", "PicoClaw 状态", "只读查看本盘持久服务与固定版本", false},
+	{"pico.start", "启动 PicoClaw", "启动本盘持久 Gateway，设置与会话保存在盘内", true},
+	{"pico.stop", "停止 PicoClaw", "停止本应用管理的服务", true},
+	{"pico.ui.open", "完整 PicoClaw", "按需启动并打开官方完整界面", true},
+	{"runtime.cache.status", "本机程序缓存", "查看公开程序缓存位置；密钥与会话仍保存在本盘", false},
+	{"settings.ui.get", "界面语言", "读取随盘保存的界面语言", false},
+	{"settings.ui.save", "保存界面语言", "保存中英文选择，不修改模型或对话", true},
 	{"settings.model.get", "模型设置", "读取本盘模型选择，不返回密钥", false},
 	{"settings.model.save", "保存模型设置", "保存自带 API 或虾盘云选择到本盘", true},
 	{"settings.model.test", "测试模型连接", "发送一次工具调用测试，不保存设置", false},
@@ -59,7 +67,7 @@ var actions = []Action{
 	{"chat.list", "对话记录", "读取本盘维护对话", false},
 	{"chat.read", "继续对话", "读取指定维护对话", false},
 	{"chat.progress", "处理进度", "读取当前对话的实际动作结果", false},
-	{"chat.send", "AI 维护对话", "云端或本地对话，调用受控维护动作", true},
+	{"chat.send", "AI 维护对话", "PicoClaw 随身 AI，或无需模型的维护向导", true},
 	{"chat.confirm", "确认维护操作", "执行此对话中明确展示的操作", true},
 	{"processes.inspect", "查看进程", "只读获取进程名称与内存，不读取命令行", false},
 	{"network.diagnose", "网络诊断", "检查网卡、DNS 与云端连通性，不改配置", false},
@@ -68,11 +76,8 @@ var actions = []Action{
 	{"tools.launch", "打开维护工具", "打开系统或已校验的本盘便携工具，不自动清理或安装驱动", true},
 	{"system.inspect", "电脑体检", "读取系统、内存与磁盘信息", false},
 	{"network.inspect", "网络检查", "读取本机网络接口，不更改网络配置", false},
-	{"resources.scan", "查看盘内资源", "查看软件、模型、镜像和驱动，不执行发现的文件", false},
-	{"models.inspect", "本地模型检查", "检查盘内模型与本机本地推理服务", false},
-	{"models.start", "启动本盘离线 AI", "校验内置资源，以 CPU 在本机启动模型，不访问云端", true},
-	{"models.stop", "停止本盘模型", "仅停止本程序在此目录启动的模型", true},
-	{"maintenance.plan", "生成维护方案", "根据需求给出步骤；本地模型未连接时使用明确标注的维护向导", false},
+	{"resources.scan", "查看盘内资源", "查看软件、镜像和驱动，不执行发现的文件", false},
+	{"maintenance.plan", "生成维护方案", "使用本地规则给出明确标注的维护步骤，无需模型", false},
 	{"tools.install", "安装便携体检工具", "校验并安装内置体检工具到本盘 data/tools，不改本机软件", true},
 	{"report.create", "保存体检报告", "原子保存到本盘 data/reports，生成新的报告", true},
 	{"reports.list", "查看维护记录", "读取本盘生成的报告", false},
@@ -82,6 +87,26 @@ func runAction(ctx context.Context, root, id string, input map[string]any) Resul
 	var data any
 	var err error
 	switch id {
+	case "pico.status":
+		data, err = picoGatewayInspect(root)
+	case "pico.start":
+		data, err = picoGatewayStart(ctx, root)
+	case "pico.stop":
+		data, err = picoGatewayStop(root)
+	case "pico.ui.open":
+		data, err = picoWebUIStart(ctx, root)
+		if err == nil {
+			if view, ok := data.(map[string]any); ok {
+				if address, ok := view["url"].(string); ok && address != "" {
+					openBrowser(address)
+					view["opened"] = true
+				}
+			}
+		}
+	case "runtime.cache.status":
+		data = runtimeCacheInfo(root)
+	case "settings.ui.get", "settings.ui.save":
+		data, err = uiSettingsAction(root, id, input)
 	case "settings.model.get", "settings.model.save", "settings.model.test":
 		data, err = modelSettingsAction(ctx, root, id, input)
 	case "startup.inspect":
@@ -108,12 +133,6 @@ func runAction(ctx context.Context, root, id string, input map[string]any) Resul
 		data, err = inspectNetwork()
 	case "resources.scan":
 		data, err = scanResources(root)
-	case "models.inspect":
-		data, err = inspectModels(ctx, root)
-	case "models.start":
-		data, err = startModel(ctx, root, input)
-	case "models.stop":
-		data, err = stopModel(root)
 	case "maintenance.plan":
 		data, err = maintenancePlan(ctx, root, input)
 	case "tools.install":
@@ -129,16 +148,33 @@ func runAction(ctx context.Context, root, id string, input map[string]any) Resul
 	default:
 		err = fmt.Errorf("不支持的动作：%s", id)
 	}
+	if err == nil && (id == "wallet.ensure" || id == "wallet.adopt" || id == "wallet.rotate" || id == "wallet.reset" || id == "settings.model.save") {
+		// Wallet/settings callbacks have released their locks. Stop consumers
+		// using the old credential before reporting a completed replacement.
+		if syncErr := syncOwnedPicoCredentials(ctx, root); syncErr != nil {
+			err = fmt.Errorf("配置已保存，AI 服务重新启动未完成：%w", syncErr)
+		}
+	}
 	if err != nil {
 		return Result{OK: false, Action: id, Error: err.Error()}
 	}
 	return Result{OK: true, Action: id, Data: data}
 }
 
+func actionTimeout(id string) time.Duration {
+	if id == "chat.send" {
+		return 30 * time.Minute
+	}
+	if id == "pico.start" || id == "pico.ui.open" {
+		return 3 * time.Minute
+	}
+	return 60 * time.Second
+}
+
 func str(input map[string]any, key string) string { s, _ := input[key].(string); return s }
 
 func main() {
-	defer stopAllModels()
+	defer stopAllOwnedPicoProcesses()
 	args := os.Args[1:]
 	if len(args) > 0 && (args[0] == "version" || args[0] == "--version") {
 		fmt.Println(version)
@@ -176,6 +212,16 @@ func main() {
 	if !*noOpen {
 		openBrowser(base)
 	}
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(signals)
+	go func() {
+		<-signals
+		stopOwnedPicoProcesses(root)
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		server.Shutdown(ctx)
+	}()
 	if err = server.Serve(listener); err != nil && err != http.ErrServerClosed {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -189,6 +235,9 @@ func resolveRoot(root string) (string, error) {
 			return "", err
 		}
 		root = filepath.Dir(exe)
+		if filepath.Base(root) == "bin" && filepath.Base(filepath.Dir(root)) == "app" {
+			root = filepath.Dir(filepath.Dir(root))
+		}
 	}
 	abs, err := filepath.Abs(root)
 	if err != nil {
@@ -244,19 +293,21 @@ func actionCLI(args []string) {
 			os.Exit(2)
 		}
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), actionTimeout(id))
 	defer cancel()
 	r := runAction(ctx, root, id, input)
 	json.NewEncoder(os.Stdout).Encode(r)
 	if !r.OK {
+		stopAllOwnedPicoProcesses()
 		os.Exit(1)
 	}
-	if id == "models.start" {
-		fmt.Fprintln(os.Stderr, "本地模型运行中；终止本进程会停止本次模型服务。")
+	if id == "pico.start" || id == "pico.ui.open" {
+		fmt.Fprintln(os.Stderr, "PicoClaw 运行中；按 Ctrl+C 停止本次启动的服务。")
 		signals := make(chan os.Signal, 1)
-		signal.Notify(signals, os.Interrupt)
+		signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
 		<-signals
 	}
+
 }
 
 func newServer(root, base string) (*http.Server, error) {
@@ -279,7 +330,7 @@ func newServer(root, base string) (*http.Server, error) {
 		}
 		writeJSON(w, Result{OK: true, Action: "app.quit"})
 		go func() {
-			stopAllModels()
+			stopAllOwnedPicoProcesses()
 			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 			defer cancel()
 			server.Shutdown(ctx)
@@ -309,7 +360,7 @@ func newServer(root, base string) (*http.Server, error) {
 			writeJSON(w, Result{OK: false, Error: "请求格式不正确"})
 			return
 		}
-		ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
+		ctx, cancel := context.WithTimeout(r.Context(), actionTimeout(req.Action))
 		defer cancel()
 		writeJSON(w, runAction(ctx, root, req.Action, req.Input))
 	})
@@ -352,6 +403,8 @@ func newServer(root, base string) (*http.Server, error) {
 			w.Header().Set("Content-Type", "text/css; charset=utf-8")
 		case ".js":
 			w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+		case ".json":
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		}
 		w.Write(b)
 	})
@@ -369,7 +422,7 @@ func newServer(root, base string) (*http.Server, error) {
 		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
 		mux.ServeHTTP(w, r)
 	})
-	server = &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 65 * time.Second, IdleTimeout: 30 * time.Second}
+	server = &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 31 * time.Minute, IdleTimeout: 30 * time.Second}
 	return server, nil
 }
 

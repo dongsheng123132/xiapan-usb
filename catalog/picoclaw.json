@@ -1,1 +1,28 @@
-{"ready":true,"platform":"windows/amd64","path":"runtime/picoclaw/windows-x64/picoclaw.exe","sha256":"f939c001c729e6e326a99f154f376816ac12a79cb70968f882b3ee287f45119e","version":"0.3.1"}
+{
+  "ready": true,
+  "version": "0.3.1",
+  "platforms": {
+    "windows/amd64": {
+      "path": "runtime/picoclaw/windows-x64/picoclaw.exe",
+      "sha256": "67d5f378210316023e3f044e03b411a28b6fa7671e1b18e76bb6775fc8535cc9",
+      "launcher_path": "runtime/picoclaw/windows-x64/picoclaw-launcher.exe",
+      "launcher_sha256": "e720ab54e8fd9212c336e866157d896fa599542d4603282ff67c1b2e676bb387"
+    },
+    "darwin/arm64": {
+      "path": "runtime/picoclaw/darwin-arm64/picoclaw",
+      "sha256": "6b1720a55acea9c3c34ee3acad194084508d4905a9c39fdaf199ffa6c091dae0",
+      "launcher_path": "runtime/picoclaw/darwin-arm64/picoclaw-launcher",
+      "launcher_sha256": "403c24a7804d183c6989310cb24e417099266fb177b0dff2b6e2870c138809b9"
+    },
+    "darwin/amd64": {
+      "path": "runtime/picoclaw/darwin-x64/picoclaw",
+      "sha256": "f198cd2164e870f165bf9670e1cd36afad27be9d03d8eeca6556f6d1aafb7f45",
+      "launcher_path": "runtime/picoclaw/darwin-x64/picoclaw-launcher",
+      "launcher_sha256": "a9c6627ed264f81354077b10a52ec4cab2736f4379a0c4d438361b2ef370c252"
+    }
+  },
+  "distribution": "u-pico.1",
+  "source_url": "https://codeload.github.com/sipeed/picoclaw/zip/refs/tags/v0.3.1",
+  "source_sha256": "22507443b0fdd3835cd461cfe1a15e6565702a55b7dd0aa53bbbb0e0ee96484e",
+  "updates_enabled": false
+}

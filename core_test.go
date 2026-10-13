@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -16,88 +15,34 @@ import (
 
 func TestResourceScanContainsOnlyResourceRoots(t *testing.T) {
 	root := t.TempDir()
-	os.MkdirAll(filepath.Join(root, "models"), 0700)
+	os.MkdirAll(filepath.Join(root, "drivers"), 0700)
 	os.MkdirAll(filepath.Join(root, "data", "private"), 0700)
-	os.WriteFile(filepath.Join(root, "models", "中文模型.gguf"), []byte("fixture"), 0600)
+	os.WriteFile(filepath.Join(root, "drivers", "网卡资源.inf"), []byte("fixture"), 0600)
 	os.WriteFile(filepath.Join(root, "data", "private", "secret.gguf"), []byte("private"), 0600)
 	r, err := scanResources(root)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(r.Files) != 1 || r.Files[0].Path != "models/中文模型.gguf" {
+	if len(r.Files) != 1 || r.Files[0].Path != "drivers/网卡资源.inf" {
 		t.Fatalf("unexpected scan %#v", r)
-	}
-}
-
-func TestModelProbeRequiresActualModelList(t *testing.T) {
-	state := 0
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if state == 0 {
-			w.WriteHeader(503)
-			w.Write([]byte(`{"error":"loading"}`))
-			return
-		}
-		w.Write([]byte(`{"data":[{"id":"fixture-model"}]}`))
-	}))
-	defer server.Close()
-	old := localBackends["llamacpp"]
-	localBackends["llamacpp"] = server.URL
-	defer func() { localBackends["llamacpp"] = old }()
-	if _, err := queryLocalModels(context.Background(), "llamacpp"); err == nil {
-		t.Fatal("loading service reported ready")
-	}
-	state = 1
-	rows, err := queryLocalModels(context.Background(), "llamacpp")
-	if err != nil || len(rows) != 1 || rows[0].Model != "fixture-model" {
-		t.Fatalf("ready list not detected: %v %v", rows, err)
 	}
 }
 
 func TestResourceHashRequiredBeforeExecution(t *testing.T) {
 	root := t.TempDir()
-	os.MkdirAll(filepath.Join(root, "models"), 0700)
-	os.WriteFile(filepath.Join(root, "models", "test.gguf"), []byte("changed"), 0600)
+	os.MkdirAll(filepath.Join(root, "drivers"), 0700)
+	os.WriteFile(filepath.Join(root, "drivers", "test.inf"), []byte("changed"), 0600)
 	hash := sha256.Sum256([]byte("expected"))
-	if _, err := verifyResource(root, "models/test.gguf", hex.EncodeToString(hash[:])); err == nil {
-		t.Fatal("accepted altered model resource")
-	}
-}
-
-func TestModelReplyUsesSkillsWithoutExecutingItsText(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
-			w.Write([]byte(`{"data":[{"id":"fixture-model"}]}`))
-			return
-		}
-		var request map[string]any
-		json.NewDecoder(r.Body).Decode(&request)
-		messages := request["messages"].([]any)
-		system := messages[0].(map[string]any)["content"].(string)
-		if !strings.Contains(system, "电脑体检与维护分诊") {
-			t.Error("maintenance skill missing from model context")
-		}
-		w.Write([]byte(`{"choices":[{"message":{"content":"这里是建议，不执行任何命令。"}}],"usage":{"completion_tokens":12}}`))
-	}))
-	defer server.Close()
-	old := localBackends["llamacpp"]
-	localBackends["llamacpp"] = server.URL
-	defer func() { localBackends["llamacpp"] = old }()
-	root := t.TempDir()
-	p, err := maintenancePlan(context.Background(), root, map[string]any{"message": "电脑变慢", "backend": "llamacpp", "model": "fixture-model"})
-	if err != nil || p.Mode != "local-model" {
-		t.Fatalf("local reply failed: %v", err)
-	}
-	entries, _ := os.ReadDir(root)
-	if len(entries) != 0 {
-		t.Fatal("model reply changed filesystem")
+	if _, err := verifyResource(root, "drivers/test.inf", hex.EncodeToString(hash[:])); err == nil {
+		t.Fatal("accepted altered runtime resource")
 	}
 }
 
 func TestResourceScanSkipsLinks(t *testing.T) {
 	root := t.TempDir()
 	outside := t.TempDir()
-	os.WriteFile(filepath.Join(outside, "private.gguf"), []byte("private"), 0600)
-	if err := os.Symlink(outside, filepath.Join(root, "models")); err != nil {
+	os.WriteFile(filepath.Join(outside, "private.inf"), []byte("private"), 0600)
+	if err := os.Symlink(outside, filepath.Join(root, "drivers")); err != nil {
 		t.Skipf("symlink permission unavailable: %v", err)
 	}
 	r, err := scanResources(root)

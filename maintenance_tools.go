@@ -22,6 +22,9 @@ type BuiltinTool struct {
 }
 
 var builtinTools = []BuiltinTool{
+	{"memory-diagnostic", "Windows 内存诊断", "打开内存诊断选择页；是否重启由你选择。", "mdsched.exe", nil},
+	{"network-adapters", "Windows 网络适配器", "查看网络连接与适配器属性，不自动修改配置。", "control.exe", []string{"ncpa.cpl"}},
+	{"network-settings", "Windows 网络设置", "打开网络状态页；所有更改由你在系统页面选择。", "rundll32.exe", []string{"url.dll,FileProtocolHandler", "ms-settings:network-status"}},
 	{"task-manager", "Windows 任务管理器", "查看启动应用、进程与性能。", "Taskmgr.exe", nil},
 	{"disk-cleanup", "Windows 磁盘清理", "由你选择清理项与目标磁盘；不自动删除文件。", "cleanmgr.exe", nil},
 	{"device-manager", "Windows 设备管理器", "查看设备状态，手动选择已匹配的驱动；不自动装驱动。", "mmc.exe", []string{"devmgmt.msc"}},
@@ -64,11 +67,14 @@ func builtinCommand(t BuiltinTool) (string, []string, bool) {
 	program := filepath.Join(dir, t.Program)
 	args := append([]string{}, t.Args...)
 	for i, a := range args {
-		if strings.HasSuffix(a, ".msc") {
+		if strings.HasSuffix(a, ".msc") || strings.HasSuffix(a, ".cpl") {
 			args[i] = filepath.Join(dir, a)
 		}
 	}
 	for _, path := range append([]string{program}, args...) {
+		if !filepath.IsAbs(path) {
+			continue
+		} // Fixed literal switches/URIs are not file paths.
 		info, err := os.Stat(path)
 		if err != nil || !info.Mode().IsRegular() {
 			return "", nil, false

@@ -1,12 +1,10 @@
 # 第三方资源说明
 
-本项目自有源码采用 MIT 许可证，见 LICENSE。可选本地 AI 包独立保留上游许可证；不把第三方模型或工具变成本项目自有作品。
+本项目自有源码采用 MIT 许可证，见 LICENSE。第三方 Agent、工具和组件独立保留上游许可证；本发行版不包含本地模型或推理引擎。
 
 | 资源 | 本轮版本与来源 | 许可证 |
 | --- | --- | --- |
-| llama.cpp CPU 推理运行时 | [官方 b11146 Windows CPU 包](https://github.com/ggml-org/llama.cpp/releases/tag/b11146) | MIT，全文见 licenses/llama.cpp-MIT.txt |
-| Qwen3.5-0.8B 模型 | [Qwen 原模型](https://huggingface.co/Qwen/Qwen3.5-0.8B)，[ggml-org 量化文件](https://huggingface.co/ggml-org/Qwen3.5-0.8B-GGUF/tree/8fea620) | Apache 2.0，全文见 licenses/Qwen3.5-Apache-2.0.txt |
-| PicoClaw 可选 Agent | [官方 v0.3.1 Windows 包](https://github.com/sipeed/picoclaw/releases/tag/v0.3.1) | MIT，全文见 licenses/PicoClaw-MIT.txt |
+| PicoClaw core + launcher | [固定 v0.3.1 源码，发行补丁 u-pico.1](https://github.com/sipeed/picoclaw/releases/tag/v0.3.1) | MIT，全文见 licenses/PicoClaw-MIT.txt |
 | WinDirStat 可选便携工具 | [官方 2.9.0 便携包](https://github.com/windirstat/windirstat/releases/tag/release/v2.9.0) | GPL-2.0；工具目录保留 LICENSE.md，工具包附对应源码 |
 | PeaZip 可选便携工具 | [官方 11.3.0 WIN64 Portable](https://github.com/peazip/PeaZip/releases/tag/11.3.0) | LGPL-3.0；依赖另按 res/share/copying/third-parties 保留各自声明，工具包附 PeaZip 主项目源码 |
 | Notepad++ | [官方 8.9.8.1 x64 Portable](https://github.com/notepad-plus-plus/notepad-plus-plus/releases/tag/v8.9.8.1) | GPL-3.0，保留官方 license.txt，附对应主项目源码 |
@@ -14,12 +12,14 @@
 | Explorer++ | [官方 1.4.0 x64](https://github.com/derceg/explorerplusplus/releases/tag/version-1.4.0) | GPL-3.0，保留 License.txt，附对应项目源码 |
 | Everything | [官方 1.4.1.1032 x64 ZIP](https://www.voidtools.com/downloads/) | MIT 风格许可及 PCRE 声明，完整保留官网 License.txt |
 
-试用包使用 Q4_0 GGUF，属于上游模型的量化形式。未修改下载的模型和运行时文件；执行前校验的具体文件与 SHA-256 由 catalog/local-ai.json 记录，并嵌入对应构建。
+PicoClaw 按固定 v0.3.1 源码构建，发行补丁仅禁用自更新入口。源代码压缩包与最终三平台 core/launcher 哈希记录在 `catalog/picoclaw.json`，构建方法为 `scripts/build-picoclaw-pinned.py`。
 
-本轮未打包 Ventoy、Hiren’s BootCD PE、SystemRescue 或其他候选安装软件；功能研究和未来资源适配不等于已分发这些项目。
+`package-portable.py` 包含六款常用便携工具，以及 `catalog/emergency-tools.json` 固定的 CrystalDiskInfo 9.9.3、PhotoRec/TestDisk 7.2。CrystalDiskInfo 保留 MIT 通知；PhotoRec/TestDisk 保留 GPL 与依赖声明。来源记录、对应源码和依赖材料来自已准备的资源包，分别置于 `app/tool-sources/`、`app/extras/sources/` 与 `app/extras/licenses/`；未修改第三方维护工具二进制。
 
-`package-genie.py --with-tools` 包含上述六款传统工具；不带该参数的精简包不包含它们。完整上游便携资源保留，未修改第三方二进制。`catalog/tool-packages.json` 是来源和便携设置的维护入口，准备脚本生成 `catalog/portable-tools.json` 固定资源哈希；启动前验证。源码及上游下载记录位于工具包的 `app/tool-sources/`。更新时保留各工具的用户配置。本轮交付用户 F 盘本地试用，未对外发布。
+随附 3DP Net 21.01 历史网卡资源的来源、限制、静态检查与许可证来源说明保存在 `drivers/windows-x64/3dp-net-21.01/`。它不等于全硬件驱动支持；无需或不适用时不运行。此发行版不含 Ventoy/WinPE/SystemRescue 启动层。
+
+Go 包依赖中的 gorilla/websocket v1.5.3 与 yaml.v3 v3.0.1 随源码保留各自许可证。旧模型许可证文件仅为历史保留，不代表发行包包含这些模型。
 
 `catalog/tool-library.json` 仅为选装目录；尚未适配或未获再分发许可的项目不打入 ZIP。特别是 [Microsoft Sysinternals](https://learn.microsoft.com/en-us/sysinternals/license-faq) 明确不提供第三方再分发许可，Autoruns、Process Explorer、Process Monitor、RAMMap、TCPView 只提供官方下载入口。
 
-KeePass 与 CrystalDiskInfo 的官方便携包已调研，但本机窗口启动验收未完成，改列选装目录；发行包不包含它们的程序。
+KeePass 等尚未适配的工具仍仅提供官方入口；是否内置以固定清单和真实校验结果为准。

@@ -39,6 +39,10 @@ func portableTools() []PortableTool {
 	if err != nil || json.Unmarshal(b, &rows) != nil {
 		return nil
 	}
+	var emergency []PortableTool
+	if extra, e := assets.ReadFile("catalog/emergency-tools.json"); e == nil && json.Unmarshal(extra, &emergency) == nil {
+		rows = append(rows, emergency...)
+	}
 	return rows
 }
 

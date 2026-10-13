@@ -119,6 +119,29 @@ func modelSettingsAction(ctx context.Context, root, id string, input map[string]
 		if err != nil {
 			return nil, err
 		}
+		// Apply after releasing settingsLocks; consumers only merge our owned
+		// provider record and preserve the advanced UI's other providers.
+		walletLock := rootLock(&walletLocks, root)
+		walletLock.Lock()
+		current, currentErr := selectedModel(root)
+		if currentErr != nil {
+			walletLock.Unlock()
+			return nil, currentErr
+		}
+		key := current.APIKey
+		if current.Source == "cloud" {
+			state, loadErr := loadWallet(root)
+			if loadErr != nil {
+				walletLock.Unlock()
+				return nil, loadErr
+			}
+			key = state.APIKey
+		}
+		err = applyWalletKey(root, key)
+		walletLock.Unlock()
+		if err != nil {
+			return nil, fmt.Errorf("设置已保存，但 PicoClaw 尚未同步：%w", err)
+		}
 		return settingsView(next), nil
 	}
 	lock.Unlock()

@@ -180,30 +180,6 @@
     "ready": false
   },
   {
-    "id": "testdisk",
-    "name": "TestDisk",
-    "category": "启动与救援",
-    "description": "分区恢复和文件系统修复",
-    "official_url": "https://www.cgsecurity.org/wiki/TestDisk_Download",
-    "portable_note": "官方 ZIP 解压运行，访问物理盘通常需要管理员权限。",
-    "reason": "尚未适配和实测，提供官方下载。",
-    "license": "GPL-2.0",
-    "platform": "Windows",
-    "ready": false
-  },
-  {
-    "id": "photorec",
-    "name": "PhotoRec / QPhotoRec",
-    "category": "启动与救援",
-    "description": "按文件特征恢复误删文件",
-    "official_url": "https://www.cgsecurity.org/wiki/PhotoRec",
-    "portable_note": "包含在 TestDisk 官方包中；恢复输出应选择其他健康介质。",
-    "reason": "尚未适配和实测，提供官方下载。",
-    "license": "GPL-2.0",
-    "platform": "Windows",
-    "ready": false
-  },
-  {
     "id": "keepass",
     "name": "KeePass",
     "version": "2.61.1",
@@ -212,19 +188,6 @@
     "official_url": "https://keepass.info/download.html",
     "portable_note": "官方 Portable 包；Windows 需 .NET Framework，密码库由你另行创建。",
     "license": "GPL-2.0",
-    "platform": "windows/amd64",
-    "ready": false,
-    "reason": "官方便携版已确认；本机启动未通过验收，暂不随包执行。"
-  },
-  {
-    "id": "crystaldiskinfo",
-    "name": "CrystalDiskInfo",
-    "version": "9.9.2",
-    "category": "磁盘与硬件",
-    "description": "读取硬盘 SMART、温度和健康信息",
-    "official_url": "https://crystalmark.info/en/download/",
-    "portable_note": "官方 ZIP 标准版，配置随盘保存；读取设备可能需要管理员权限。",
-    "license": "MIT / bundled notices",
     "platform": "windows/amd64",
     "ready": false,
     "reason": "官方便携版已确认；本机启动未通过验收，暂不随包执行。"

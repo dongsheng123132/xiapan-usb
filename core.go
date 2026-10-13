@@ -8,14 +8,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"sort"
 	"strings"
@@ -83,7 +81,7 @@ type ResourceScan struct {
 
 func scanResources(root string) (ResourceScan, error) {
 	out := ResourceScan{Files: []Resource{}, Warnings: []string{}}
-	for _, kind := range []string{"models", "packages", "images", "drivers", "runtime"} {
+	for _, kind := range []string{"packages", "images", "drivers", "runtime"} {
 		dir := filepath.Join(root, kind)
 		if kind == "runtime" {
 			var err error
@@ -122,6 +120,12 @@ func scanResources(root string) (ResourceScan, error) {
 			if d.Type()&os.ModeSymlink != 0 {
 				return nil
 			}
+			if strings.HasPrefix(d.Name(), "._") || d.Name() == ".DS_Store" {
+				if d.IsDir() {
+					return filepath.SkipDir
+				}
+				return nil
+			}
 			if d.IsDir() {
 				rel, _ := filepath.Rel(dir, path)
 				if strings.Count(rel, string(os.PathSeparator)) >= 5 {
@@ -142,128 +146,18 @@ func scanResources(root string) (ResourceScan, error) {
 	return out, nil
 }
 
-type LocalService struct {
-	Kind      string `json:"kind"`
-	Model     string `json:"model"`
-	Available bool   `json:"available"`
-}
-type ModelState struct {
-	Files      []Resource     `json:"files"`
-	Services   []LocalService `json:"services"`
-	Ready      bool           `json:"ready"`
-	Advice     string         `json:"advice"`
-	Bundled    bool           `json:"bundled"`
-	BundleNote string         `json:"bundle_note"`
-}
-
-var localBackends = map[string]string{"ollama": "http://127.0.0.1:11434", "llamacpp": "http://127.0.0.1:18080"}
-
-func backendURL(kind string) (string, bool) {
-	if kind == "bundled" {
-		v, ok := modelAddresses.Load(kind)
-		if ok {
-			return v.(string), true
-		}
-		return "", false
-	}
-	v, ok := localBackends[kind]
-	return v, ok
-}
-
+// Local transports never inherit a system proxy or follow redirects.
 func localHTTP(timeout time.Duration) *http.Client {
-	return &http.Client{Timeout: timeout, Transport: &http.Transport{Proxy: nil, DisableKeepAlives: true}, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
-}
-
-func localRequest(ctx context.Context, kind, method, path string, body io.Reader) *http.Request {
-	base, _ := backendURL(kind)
-	req, _ := http.NewRequestWithContext(ctx, method, base+path, body)
-	if key, ok := modelKeys.Load(kind); ok {
-		req.Header.Set("Authorization", "Bearer "+key.(string))
-	}
-	return req
-}
-
-func queryLocalModels(ctx context.Context, kind string) ([]LocalService, error) {
-	if _, ok := backendURL(kind); !ok {
-		return nil, errors.New("本盘模型尚未启动")
-	}
-	path := "/v1/models"
-	field, nameField := "data", "id"
-	if kind == "ollama" {
-		path = "/api/tags"
-		field, nameField = "models", "name"
-	}
-	req := localRequest(ctx, kind, "GET", path, nil)
-	resp, err := localHTTP(3 * time.Second).Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("本地服务尚未就绪：%d", resp.StatusCode)
-	}
-	var payload map[string]any
-	if err = json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&payload); err != nil {
-		return nil, err
-	}
-	rows := []LocalService{}
-	list, _ := payload[field].([]any)
-	for _, entry := range list {
-		row, _ := entry.(map[string]any)
-		name, _ := row[nameField].(string)
-		if name != "" {
-			rows = append(rows, LocalService{kind, name, true})
-		}
-	}
-	if len(rows) == 0 {
-		return nil, errors.New("本地服务尚未提供模型列表")
-	}
-	return rows, nil
-}
-
-func inspectModels(ctx context.Context, root string) (ModelState, error) {
-	scan, err := scanResources(root)
-	if err != nil {
-		return ModelState{}, err
-	}
-	state := ModelState{Files: []Resource{}, Services: []LocalService{}}
-	state.Bundled, state.BundleNote = bundledAI(root)
-	for _, f := range scan.Files {
-		if f.Kind == "models" && strings.HasSuffix(strings.ToLower(f.Path), ".gguf") {
-			state.Files = append(state.Files, f)
-		}
-	}
-	for _, kind := range []string{"ollama", "llamacpp", "bundled"} {
-		rows, err := queryLocalModels(ctx, kind)
-		if err == nil {
-			state.Services = append(state.Services, rows...)
-			state.Ready = true
-		}
-	}
-	if state.Ready {
-		state.Advice = "已有本地模型服务，可选择模型进行离线对话。速度与能力需要在这台电脑上实际验证。"
-	} else if len(state.Files) > 0 {
-		state.Advice = "盘内有模型权重，尚未连接推理服务。需要匹配的平台运行时；放入 GGUF 文件不等于模型已经启动。"
-	} else {
-		state.Advice = "尚未发现模型权重。断网时可先使用体检、资源扫描和维护向导；完整离线 AI 需要提前备好推理程序与模型包。"
-	}
-	return state, nil
+	return &http.Client{Timeout: timeout, Transport: &http.Transport{Proxy: nil}, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
 }
 
 type Plan struct {
-	Title   string        `json:"title"`
-	Summary string        `json:"summary"`
-	Steps   []string      `json:"steps"`
-	Action  string        `json:"suggested_action"`
-	Mode    string        `json:"mode"`
-	Reply   string        `json:"reply,omitempty"`
-	Metrics *ModelMetrics `json:"metrics,omitempty"`
-}
-
-type ModelMetrics struct {
-	ElapsedMS        int64 `json:"elapsed_ms"`
-	PromptTokens     int   `json:"prompt_tokens"`
-	CompletionTokens int   `json:"completion_tokens"`
+	Title   string   `json:"title"`
+	Summary string   `json:"summary"`
+	Steps   []string `json:"steps"`
+	Action  string   `json:"suggested_action"`
+	Mode    string   `json:"mode"`
+	Reply   string   `json:"reply,omitempty"`
 }
 
 func guide(message string) Plan {
@@ -284,11 +178,11 @@ func guide(message string) Plan {
 		p.Summary = "先检查网卡和地址信息，再区分 DNS、代理和服务问题。"
 		p.Steps = []string{"查看启用的网卡与地址", "结合故障区分网络连接、DNS、代理和目标服务", "修改前保存原配置，修复后验证同一个问题"}
 		p.Action = "network.inspect"
-	case containsAny(message, "模型", "离线AI", "离线 AI", "断网", "没网"):
-		p.Title = "准备离线 AI"
-		p.Summary = "先看本机配置、盘内模型和推理服务；资源齐全才可断网启动。"
-		p.Steps = []string{"检查模型文件与本地服务", "按照可用内存、算力和磁盘空间选模型", "使用中文维护问题做真实推理测试，再决定默认模型"}
-		p.Action = "models.inspect"
+	case containsAny(message, "断网", "没网", "离线"):
+		p.Title = "断网应急维护"
+		p.Summary = "先检查网卡与驱动，再尝试恢复联网；盘内维护工具无需 AI 或钱包额度。"
+		p.Steps = []string{"读取网络设备、驱动与错误码", "尝试有线网络或手机 USB 共享网络", "从工具箱打开对应工具；驱动按硬件 ID 和系统版本核对"}
+		p.Action = "drivers.inspect"
 	case containsAny(message, "安装", "装好", "软件", "codex", "Codex", "Claude", "node", "Node"):
 		p.Title = "从盘内安装工具"
 		p.Summary = "先选择正确平台和完整资源包，安装完成后运行验证。当前可真实安装的是内置便携体检工具。"
@@ -319,86 +213,10 @@ func maintenancePlan(ctx context.Context, root string, input map[string]any) (Pl
 	if len(message) > 8000 {
 		return Plan{}, errors.New("请将问题缩短到 8000 字节以内")
 	}
-	p := guide(message)
-	backend := str(input, "backend")
-	model := str(input, "model")
-	if backend == "" {
-		return p, nil
+	if str(input, "backend") != "" {
+		return Plan{}, errors.New("此产品不包含本地模型服务；请使用离线维护向导或 PicoClaw 在线模型")
 	}
-	_, ok := backendURL(backend)
-	if !ok || model == "" {
-		return Plan{}, errors.New("请选择已连接的本地模型")
-	}
-	state, err := inspectModels(ctx, root)
-	if err != nil {
-		return Plan{}, err
-	}
-	found := false
-	for _, s := range state.Services {
-		if s.Kind == backend && s.Model == model {
-			found = true
-			break
-		}
-	}
-	if !found {
-		return Plan{}, errors.New("所选本地模型已不可用，请刷新后重试")
-	}
-	sys, _ := inspectSystem(root)
-	skill := "pc-triage"
-	switch p.Title {
-	case "系统与启动救援":
-		skill = "pc-boot-recovery"
-	case "保护和找回文件":
-		skill = "pc-data-rescue"
-	case "查清不能上网的原因":
-		skill = "pc-network-care"
-	case "准备离线 AI":
-		skill = "pc-local-model"
-	case "从盘内安装工具":
-		skill = "pc-offline-install"
-	}
-	principles, _ := assets.ReadFile("skills/" + skill + "/SKILL.md")
-	// Skills remain reusable by capable agents. This small explanation model
-	// receives prose only, so executable examples cannot become user advice.
-	skillText := regexp.MustCompile("`[^`]+`").ReplaceAllString(string(principles), "对应的检测按钮")
-	prompt := fmt.Sprintf("你是虾盘的维护说明助手。把下方已审核步骤解释给普通用户，使用不超过三句的简洁中文。只解释这些步骤，不添加新操作，不给命令或代码，不提接口名称。不要声称已经修好或已经查出原因。\n真实检测：系统 %s/%s，总内存 %.1f GiB。总内存不是当前空闲内存。体检按钮可读取系统、架构、总内存和磁盘剩余空间；不能读取进程、温度或 SMART，不能判断病毒。网络按钮只查看网卡与地址。\n已审核步骤：%s。\n参考维护经验：\n%s\n最后提醒用户点击页面下方的下一步按钮开始检测。", sys.OS, sys.Arch, float64(sys.MemoryBytes)/(1<<30), strings.Join(p.Steps, "；"), skillText)
-	payload := map[string]any{"model": model, "messages": []map[string]string{{"role": "system", "content": prompt}, {"role": "user", "content": message}}, "stream": false, "max_tokens": 384, "temperature": 0.2}
-	if backend == "llamacpp" || backend == "bundled" {
-		payload["chat_template_kwargs"] = map[string]bool{"enable_thinking": false}
-	}
-	b, _ := json.Marshal(payload)
-	req := localRequest(ctx, backend, "POST", "/v1/chat/completions", strings.NewReader(string(b)))
-	req.Header.Set("Content-Type", "application/json")
-	started := time.Now()
-	resp, err := localHTTP(55 * time.Second).Do(req)
-	if err != nil {
-		return Plan{}, fmt.Errorf("本地模型响应失败：%w", err)
-	}
-	defer resp.Body.Close()
-	var reply struct {
-		Usage struct {
-			PromptTokens     int `json:"prompt_tokens"`
-			CompletionTokens int `json:"completion_tokens"`
-		} `json:"usage"`
-		Choices []struct {
-			Message struct {
-				Content string `json:"content"`
-			} `json:"message"`
-		} `json:"choices"`
-	}
-	if resp.StatusCode != 200 {
-		return Plan{}, fmt.Errorf("本地模型返回状态 %d；体检和维护向导仍可使用", resp.StatusCode)
-	}
-	if err = json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&reply); err != nil {
-		return Plan{}, err
-	}
-	if len(reply.Choices) == 0 || strings.TrimSpace(reply.Choices[0].Message.Content) == "" {
-		return Plan{}, errors.New("模型没有返回可展示的回答，请使用维护向导或调整模型")
-	}
-	p.Mode = "local-model"
-	p.Reply = reply.Choices[0].Message.Content
-	p.Metrics = &ModelMetrics{time.Since(started).Milliseconds(), reply.Usage.PromptTokens, reply.Usage.CompletionTokens}
-	return p, nil
+	return guide(message), nil
 }
 
 func writablePath(root string, parts ...string) (string, error) {
