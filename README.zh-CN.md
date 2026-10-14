@@ -8,7 +8,7 @@
 
 **随身 AI、钱包随盘、程序缓存、断网应急、电脑维护工具包。**
 
-![Preview](https://img.shields.io/badge/version-0.5.2--portable--preview-8b6b33)
+![Preview](https://img.shields.io/badge/version-0.5.4--portable--preview-8b6b33)
 ![Go](https://img.shields.io/badge/Go-1.24%2B-367a8d)
 ![License](https://img.shields.io/badge/license-MIT-527c46)
 ![AI optional](https://img.shields.io/badge/AI-optional-4c7770)
@@ -16,7 +16,7 @@
 [快速开始](#快速开始) · [平台支持](#平台支持) · [制作便携包](#制作多平台便携包) · [参与贡献](CONTRIBUTING.md)
 
 > [!NOTE]
-> **当前为预览版。** 发行配方包含 Windows x64、Mac Apple Silicon 和 Mac Intel 三个平台的程序。新版 Mac 包尚未完成实机验收，本轮远程测试机不可达；Windows 工具不算 Mac 工具。产品范围以 [产品设计](docs/PRODUCT.md) 为准。
+> **当前为预览版。** 发行配方包含 Windows x64、Mac Apple Silicon 和 Mac Intel 三个平台的程序。Apple Silicon 已通过 ExFAT 实体盘的启动、文件工具、凭证重启和退出验收；Intel 与 Finder 首次信任仍待验证；Windows 工具不算 Mac 工具。产品范围以 [产品设计](docs/PRODUCT.md) 为准。
 
 ## 把 AI 和应急工具带在身边
 
@@ -75,7 +75,7 @@ Windows 发行配方包含 **9 款便携工具和 9 项系统工具入口**，�
 
 工具的版本、文件、SHA-256 与许可证记录在固定清单中，制盘只复用资源源目录中的已核验文件。驱动资源和硬件识别单独提供；自动匹配、安装与回滚尚未实现。系统工具入口包括任务管理器、设备管理器等 Windows 自带程序。
 
-Mac 侧打开存在于系统中的 **活动监视器、磁盘工具、控制台、系统信息和无线诊断**。这是 5 个 macOS 自带程序入口，尚待 Mac 实机启动验收。主界面、工具用途、客户说明提供中英文；第三方工具界面语言以其上游能力为准。
+Mac 侧打开存在于系统中的 **活动监视器、磁盘工具、控制台、系统信息和无线诊断**。这是 5 个 macOS 自带程序入口，活动监视器已在 Mac 实机启动，其余四项已验证系统应用路径。主界面、工具用途、客户说明提供中英文；第三方工具界面语言以其上游能力为准。
 
 将全新母盘文件夹里的内容完整复制到 U 盘即可，保留目录结构。双击 `开始使用.cmd` 或 `启动 Mac.command`，参见 [中文快速入门](docs/QUICKSTART.zh-CN.md) / [English quick start](docs/QUICKSTART.en.md)。客户可填写兼容 API 地址、自己的 Key 和支持工具调用的模型 ID；Kimi、智谱等按服务商兼容接口接入，Gemini 复杂工具任务建议在完整 PicoClaw 配置原生 provider。
 
@@ -98,7 +98,7 @@ PicoClaw 工具功能按当前系统用户权限运行。维护动作由界面�
 | 平台 | 实际验证范围 |
 | --- | --- |
 | **Windows x64** | 历史维护流程已有实物 U 盘测试；0.5 Gateway/缓存成品以本轮发行验收记录为准，旧测试不代替新链路验证。 |
-| macOS · Apple Silicon / Intel | 两个平台的程序均进入制盘配方。首次信任、权限、实体 U 盘与跨电脑使用尚未实机验收，本轮远程 Mac 测试机不可达。 |
+| macOS · Apple Silicon / Intel | Apple Silicon 已通过 ExFAT 实体盘启动、文件工具、凭证重启和退出验收。Intel、Finder 首次信任和跨电脑状态接续仍待验证，见 [发行验证](docs/PORTABLE-VALIDATION.md)。 |
 | Linux x64 | 保留核心源码与构建目标，本次成品配方不包含 Linux。历史 WSL 体检/报告测试不等于 Linux 桌面发行验收。 |
 
 一只盘可以保存多平台程序，但各系统运行自己的可执行文件。系统无法启动时，目前不能靠本工具代替启动救援环境。启动项检查覆盖常见 Run 项与启动文件夹，不包含所有服务/计划任务，也不自动关闭启动项。
@@ -110,7 +110,7 @@ PicoClaw 工具功能按当前系统用户权限运行。维护动作由界面�
 ```powershell
 python scripts/build-picoclaw-pinned.py
 .\scripts\build.ps1
-python scripts/package-portable.py --resources "D:\已验证工具资源" --output "D:\发盘\U-PicoClaw-0.5.2-portable-preview"
+python scripts/package-portable.py --resources "D:\已验证工具资源" --output "D:\发盘\U-PicoClaw-0.5.4-portable-preview"
 ```
 
 资源目录需有清单要求的工具文件，输出必须是尚不存在的新目录。脚本校验资源、创建空白 data 并生成成品校验清单，不复制来源盘的个人数据。新母盘只使用这条配方，历史 package-genie 不再作为本产品制盘入口。准备要求与验收见 [开发指南](docs/DEVELOPMENT.md)。

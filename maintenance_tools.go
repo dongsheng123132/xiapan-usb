@@ -124,6 +124,19 @@ func builtinCommandForPlatform(t BuiltinTool, platform, systemDir string, stat f
 	}
 	return program, args, true
 }
+func catalogRowsForPlatform(rows []map[string]any, platform string) []map[string]any {
+	out := []map[string]any{}
+	label := map[string]string{"windows": "Windows", "darwin": "macOS", "linux": "Linux"}[platform]
+	for _, row := range rows {
+		declared, _ := row["platform"].(string)
+		// Legacy rescue resources target PCs; they are not Mac recovery tools.
+		if declared == "" && platform != "darwin" || strings.EqualFold(declared, platform) || label != "" && strings.EqualFold(declared, label) {
+			out = append(out, row)
+		}
+	}
+	return out
+}
+
 func toolCatalog(root string) (any, error) {
 	rows := []any{}
 	for _, t := range builtinToolsForPlatform(runtime.GOOS) {
@@ -159,7 +172,7 @@ func toolCatalog(root string) (any, error) {
 	for _, f := range scan.Files {
 		counts[f.Kind]++
 	}
-	return map[string]any{"builtin_tools": rows, "portable_tools": portableToolRows(root), "library_tools": library, "resources": resources, "resource_counts": counts, "note": "已内置的便携工具可离线打开；扩展清单提供官方入口，未下载的不会显示为已内置。"}, nil
+	return map[string]any{"builtin_tools": rows, "portable_tools": portableToolRows(root), "library_tools": catalogRowsForPlatform(library, runtime.GOOS), "resources": catalogRowsForPlatform(resources, runtime.GOOS), "resource_counts": counts, "note": "已内置的便携工具可离线打开；扩展清单提供官方入口，未下载的不会显示为已内置。"}, nil
 }
 func launchTool(ctx context.Context, id string, confirmed bool) (any, error) {
 	if !confirmed {
@@ -206,6 +219,16 @@ func inspectDrivers(ctx context.Context, root string) (any, error) {
 	}
 	out := map[string]any{"platform": runtime.GOOS, "devices": []any{}, "offline_files": files, "offline_truncated": scan.Truncated, "scan_warnings": scan.Warnings, "internet_required": false, "driver_install_supported": false,
 		"next_steps": []string{"先看设备故障码与硬件 ID，缺驱动不能只按文件名猜。", "可尝试有线网络或手机 USB 共享网络；手机也可能需要驱动。", "在有网电脑从整机或网卡厂商官网下载对应系统/架构的驱动，保留安装包和校验值，放到 drivers/<系统-架构>/<厂商-型号>/。", "驱动安装会改变系统，应确认匹配、备份并保留回滚方式，再到设备管理器操作。"}}
+	if runtime.GOOS == "darwin" {
+		out["next_steps"] = []string{"检查 Wi-Fi 或有线连接，查看接口是否启用及是否获得地址。", "使用无线诊断和系统信息查看当前 Mac 的网络设备。", "外接网卡软件需匹配设备型号与 macOS 版本；盘内 Windows 驱动包不适用于 Mac。"}
+		out["note"] = "此检查提供 macOS 网络接口与地址；不读取 Windows 硬件 ID、INF 或设备故障码，也不会安装驱动。"
+		n, networkErr := inspectNetwork()
+		if networkErr != nil {
+			return nil, networkErr
+		}
+		out["interfaces"] = n
+		return out, nil
+	}
 	if runtime.GOOS != "windows" {
 		out["note"] = "此平台暂提供网卡信息与离线驱动库存，尚未实现硬件 ID 和驱动故障码读取。"
 		n, _ := inspectNetwork()

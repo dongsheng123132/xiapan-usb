@@ -8,7 +8,7 @@
 
 **A portable AI USB drive: a lightweight interface, your wallet and API key, local program caching, and emergency maintenance tools.**
 
-![Preview](https://img.shields.io/badge/version-0.5.3--portable--preview-8b6b33)
+![Preview](https://img.shields.io/badge/version-0.5.4--portable--preview-8b6b33)
 ![Go](https://img.shields.io/badge/Go-1.24%2B-367a8d)
 ![License](https://img.shields.io/badge/license-MIT-527c46)
 ![AI optional](https://img.shields.io/badge/AI-optional-4c7770)
@@ -16,7 +16,7 @@
 [Quick start](#quick-start) · [Platforms](#platforms) · [Build a USB package](#build-a-portable-usb-package) · [Contribute](CONTRIBUTING.md)
 
 > [!NOTE]
-> **Preview release.** The package recipe includes Windows x64 and macOS Apple Silicon / Intel binaries. The new macOS package has not passed physical-device acceptance; the remote test host was unavailable. Windows maintenance tools are not Mac tools. See [product scope](docs/PRODUCT.md) for the release boundary.
+> **Preview release.** The package recipe includes Windows x64 and macOS Apple Silicon / Intel binaries. Apple Silicon has passed ExFAT USB startup, native file tools, credential restart and exit acceptance. Intel and first Finder trust remain unverified. Windows maintenance tools are not Mac tools. See [product scope](docs/PRODUCT.md) for the release boundary.
 
 ## Your AI, on your drive
 
@@ -75,7 +75,7 @@ The Windows release recipe contains **9 portable utilities and 9 system-tool ent
 
 Pinned manifests record tool files, hashes, versions and licenses. The build uses only the approved immutable files from a resource source. Driver resources and hardware identification are provided separately: automatic driver matching, installation and rollback are not implemented. Windows system tools include Task Manager, Device Manager and other OS-provided utilities.
 
-On Mac, the toolkit opens **Activity Monitor, Disk Utility, Console, System Information and Wireless Diagnostics** when present. These are macOS-provided applications, not bundled Windows utilities; real Mac launch acceptance is still pending. The toolkit and quick-start instructions are available in Chinese and English. Third-party utility interfaces keep their upstream language support.
+On Mac, the toolkit opens **Activity Monitor, Disk Utility, Console, System Information and Wireless Diagnostics** when present. These are macOS-provided applications, not bundled Windows utilities; Activity Monitor was launched on a real Mac; the other four application paths were verified. The toolkit and quick-start instructions are available in Chinese and English. Third-party utility interfaces keep their upstream language support.
 
 Copy all contents of a fresh master folder to the USB drive, preserving the folders. Start with `Start Windows.cmd` or `Start Mac.command`. Read the [English quick start](docs/QUICKSTART.en.md) or [中文快速入门](docs/QUICKSTART.zh-CN.md), including custom API setup for Kimi, Zhipu and Gemini. Model settings require a compatible base URL, key and tool-capable model ID; Gemini's advanced tool tasks should use the native provider in Full PicoClaw.
 
@@ -98,7 +98,7 @@ PicoClaw’s tool features are enabled under the current user’s OS permissions
 | Platform | Verified scope |
 | --- | --- |
 | **Windows x64** | Previous USB maintenance flows were tested on physical drives. The 0.5 Gateway/cache package needs its own recorded release checks; older tests do not prove the new package. |
-| macOS · Apple Silicon / Intel | Both platform binaries are part of the package recipe. Hardware acceptance, first-run trust, permissions and USB behavior remain unverified; the remote Mac test host was unavailable. |
+| macOS · Apple Silicon / Intel | Apple Silicon startup, file tools, credential restart and cleanup passed on an ExFAT USB drive. Intel, first Finder trust and cross-computer state transfer remain unverified. See [release validation](docs/PORTABLE-VALIDATION.md). |
 | Linux x64 | Core source/build target only; not included in this three-platform product package. Previous WSL inspection/report tests do not establish a Linux desktop release. |
 
 Several platform binaries can share one drive, but each OS runs its own executable. **This is not currently a bootable rescue OS** and cannot run inside a computer whose operating system will not start. Startup inspection covers common Run entries and startup folders, not every service or scheduled task; it does not disable entries automatically.
@@ -110,7 +110,7 @@ Maintainers need Go, PowerShell and Python 3.11+. Rebuilding the frozen official
 ```powershell
 python scripts/build-picoclaw-pinned.py
 .\scripts\build.ps1
-python scripts/package-portable.py --resources "D:\verified-tool-resources" --output "D:\release\U-PicoClaw-0.5.3-portable-preview"
+python scripts/package-portable.py --resources "D:\verified-tool-resources" --output "D:\release\U-PicoClaw-0.5.4-portable-preview"
 ```
 
 The resource path must contain the approved tool files. The output must be a new directory. The packager validates hashes, creates a clean data directory and writes release checksums; it does not copy the source drive’s personal data. Use this recipe instead of the historical package-genie script. See the [development guide](docs/DEVELOPMENT.md) for prerequisites and acceptance checks.

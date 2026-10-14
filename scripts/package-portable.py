@@ -197,6 +197,24 @@ Write-Host '固定程序与资源校验通过 / Programs and resources verified.
 '''
     for name in ['校验母盘.ps1', 'Verify Files.ps1']:
         (target / name).write_text(verify_script, encoding='utf-8-sig')
+    mac_verify = """#!/bin/sh
+set -eu
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+cd "$ROOT"
+if [ ! -f SHA256SUMS ]; then
+  echo '缺少校验清单 / SHA256SUMS is missing.' >&2
+  exit 1
+fi
+if shasum -a 256 -c SHA256SUMS; then
+  echo '固定程序与资源校验通过 / Programs and resources verified. User data/ is excluded.'
+else
+  echo '校验未通过，请从干净母盘重新复制缺失或损坏的文件 / Verification failed. Restore missing or damaged files from a clean master.' >&2
+  exit 1
+fi
+"""
+    for name in ['校验母盘 Mac.command', 'Verify Files Mac.command']:
+        (target / name).write_text(mac_verify, encoding='utf-8', newline='\n')
+        os.chmod(target / name, 0o755)
     info = {'edition': 'U-PicoClaw portable AI + emergency toolkit', 'version': build_version,
             'built_at': datetime.now(timezone.utc).isoformat(),
             'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT).decode().strip(),

@@ -2,6 +2,7 @@
 const token=document.querySelector('meta[name="xiapan-token"]').content;
 const $=id=>document.getElementById(id),el=(tag,text,cls,raw=false)=>{const n=document.createElement(tag);if(text!==undefined){if(raw||tag==='pre'||tag==='code')n.textContent=text;else ui(n,text);}if(cls)n.className=cls;return n;};
 const labels={windows:'Windows',darwin:'macOS',linux:'Linux',amd64:'x64',arm64:'ARM64'},kinds={packages:'软件包',images:'镜像',drivers:'驱动',runtime:'运行时'};const names={'startup.inspect':'开机启动项','system.inspect':'系统体检','processes.inspect':'进程内存','network.diagnose':'网络诊断','network.inspect':'网卡信息','drivers.inspect':'网络设备与驱动','tools.catalog':'电脑维护工具包','tools.launch':'系统工具启动','resources.scan':'盘内资源','tools.install':'便携工具安装','report.create':'保存体检报告','reports.list':'历史报告'};
+if(isMac)names['drivers.inspect']='网络接口';
 let session=null,wallet=null,busy=false,expert=false;
 const runtimeInfo={pico:null,cache:null};
 const gib=n=>Number.isFinite(n)?`${(n/1073741824).toFixed(1)} GB`:t('未获得'),bytes=n=>n>=1073741824?gib(n):`${(n/1048576).toFixed(1)} MB`;
@@ -13,10 +14,11 @@ function button(text,action,fn,cls='primary'){const b=el('button',text,cls);if(a
 function detail(parent,data){const d=el('details',undefined,'result-detail');d.append(el('summary','查看真实结果 JSON'),el('pre',JSON.stringify(data,null,2)));parent.append(d);}
 function table(parent,head,rows){const t=el('table'),th=el('tr');for(const h of head)th.append(el('th',h));const thead=el('thead');thead.append(th);const tb=el('tbody');for(const row of rows){const tr=el('tr');for(const cell of row)tr.append(el('td',String(cell??''),undefined,true));tb.append(tr);}t.append(thead,tb);const wrap=el('div',undefined,'table-wrap');wrap.append(t);parent.append(wrap);}
 function result(parent,id,d){
- if(id==='system.inspect'){parent.append(el('p',msg('{system} · {count} 个逻辑处理器',{system:`${labels[d.os]||d.os} ${labels[d.arch]||d.arch}`,count:d.cpu_threads})));const stats=el('div',undefined,'stats');stats.append(el('div',msg('总内存 {size}',{size:gib(d.memory_bytes)})),el('div',msg('可用内存 {size}',{size:gib(d.available_memory_bytes)})));parent.append(stats);table(parent,['磁盘','文件系统','可用 / 总量'],(d.volumes||[]).map(v=>[`${v.path} ${v.label||''}`,v.file_system,`${gib(v.free_bytes)} / ${gib(v.size_bytes)}`]));}
+ if(id==='system.inspect'){parent.append(el('p',msg('{system} · {count} 个逻辑处理器',{system:`${labels[d.os]||d.os} ${labels[d.arch]||d.arch}`,count:d.cpu_threads})));const stats=el('div',undefined,'stats');stats.append(el('div',msg('总内存 {size}',{size:gib(d.memory_bytes)})),el('div',msg('可用内存 {size}',{size:d.os==='darwin'&&!d.available_memory_bytes?t('未获得'):gib(d.available_memory_bytes)})));parent.append(stats);table(parent,['磁盘','文件系统','可用 / 总量'],(d.volumes||[]).map(v=>[`${v.path} ${v.label||''}`,v.file_system,`${gib(v.free_bytes)} / ${gib(v.size_bytes)}`]));for(const note of d.notes||[])parent.append(el('p',note));if(d.os==='darwin')parent.append(button('打开系统信息','tools.launch',()=>openTool('mac-system-information'),'secondary'));}
  else if(id==='startup.inspect'){table(parent,['名称','来源','状态'],(d.items||[]).map(x=>[x.name,t(x.source),t(({enabled:'已启用',disabled:'已禁用',unknown:'待核实'})[x.state]||'待核实')]));parent.append(el('p',d.note));for(const w of d.warnings||[])parent.append(el('p',w));parent.append(button('打开任务管理器','tools.launch',()=>openTool('task-manager'),'secondary'));}
  else if(id==='processes.inspect'){table(parent,['进程','PID','工作集内存'],(d.processes||[]).slice(0,10).map(p=>[p.name,p.pid,bytes(p.memory_bytes)]));parent.append(el('p',d.note||'只读查看，没有结束进程。'));}
  else if(id==='network.diagnose'){parent.append(el('p',msg('DNS：{dns} · 云端 HTTPS：{https}',{dns:t((d.checks||[])[0]?.ok?'解析成功':'未成功'),https:t((d.checks||[])[1]?.ok?'可达':'未确认')})),el('p',d.note||'仅检测，不修改网络配置。'));}
+ else if(id==='drivers.inspect'&&d.platform==='darwin'){table(parent,['接口','状态','地址'],(d.interfaces?.interfaces||[]).map(n=>[n.name,t(n.up?'已启用':'未启用'),(n.addresses||[]).join(', ')]));parent.append(el('p',d.note));for(const step of d.next_steps||[])parent.append(el('p',step));parent.append(button('打开无线诊断','tools.launch',()=>openTool('mac-wireless-diagnostics'),'secondary'));}
  else if(id==='drivers.inspect'){table(parent,['设备','故障码','驱动 / INF'],(d.devices||[]).map(n=>[n.name,n.error_code,`${n.driver_version||t('未读到')} / ${n.inf_name||t('未读到')}`]));parent.append(el('p',msg('本盘驱动文件 {count} 个，尚未自动匹配或安装。',{count:(d.offline_files||[]).length})));for(const n of d.devices||[]){const info=el('details');info.append(el('summary',msg('{name} · 硬件 ID',{name:n.name||t('未知设备')})),el('pre',(n.hardware_ids||[]).join('\n')||t('未读到硬件 ID')));parent.append(info);}parent.append(el('p',d.note));}
  else if(id==='tools.catalog'){parent.append(el('p',msg('系统工具 {system} 项可用 · 本盘工具 {portable} 项已准备',{system:(d.builtin_tools||[]).filter(t=>t.ready).length,portable:(d.portable_tools||[]).filter(t=>t.ready).length})));for(const tool of [...(d.portable_tools||[]),...(d.builtin_tools||[])]){parent.append(el('p',`${t(tool.name)}${tool.version?' '+tool.version:''} · ${t(tool.ready?tool.source:'未包含当前平台的工具包')}`));if(tool.ready)parent.append(button(msg('打开 {name}',{name:t(tool.name)}),'tools.launch',()=>openTool(tool.id),'secondary'));}parent.append(el('p',d.note));}
  else if(id==='tools.launch'){parent.append(el('p',`${t(d.name)}: ${t(d.note)}`));}
@@ -60,9 +62,9 @@ async function maintenanceAction(action){
 async function offline(){
  const c=dialog('断网急救','无需模型、API Key 或钱包额度，直接检查电脑并打开维护工具。');
  const row=el('div',undefined,'button-row');
- for(const [label,action] of [['系统体检','system.inspect'],['识别网卡与驱动','drivers.inspect'],['检查网络','network.diagnose']])row.append(button(label,action,()=>maintenanceAction(action),'secondary'));
+ for(const [label,action] of [['系统体检','system.inspect'],[isMac?'查看网络接口':'识别网卡与驱动','drivers.inspect'],['检查网络','network.diagnose']])row.append(button(label,action,()=>maintenanceAction(action),'secondary'));
  row.append(button('查看电脑维护工具包','tools.catalog',()=>{$('dialog').close();showView('tools');},'secondary'));
- c.append(row,el('p','工具按当前系统显示。Windows 的维护程序不能在 Mac 上运行；未准备的工具会标明状态。'),el('p','试试有线连接或手机 USB 共享网络。需要驱动时，在有网电脑从整机/网卡厂商官网按硬件 ID 准备对应系统的包，放入 drivers/；当前不会自动匹配或安装。'));
+ c.append(row,el('p','工具按当前系统显示。Windows 的维护程序不能在 Mac 上运行；未准备的工具会标明状态。'),el('p',isMac?'先检查 Wi-Fi 或有线连接，再打开无线诊断。Mac 的系统驱动由 macOS 提供；外接网卡软件需匹配型号与 macOS 版本。':'试试有线连接或手机 USB 共享网络。需要驱动时，在有网电脑从整机/网卡厂商官网按硬件 ID 准备对应系统的包，放入 drivers/；当前不会自动匹配或安装。'));
  c.append(button('使用维护向导','chat.send',()=>{$('engine-select').value='guide';engineNote();$('dialog').close();showView('chat');},'secondary'));
 }
 const cacheLabels={not_used:'缓存按需准备',copied:'程序已缓存到电脑',hit:'正在复用电脑缓存',usb_fallback:'从 U 盘运行',unavailable:'缓存暂不可用'};
@@ -107,8 +109,8 @@ function setSidebarCollapsed(collapsed,remember=true){
 }
 function closeSidebarOnNarrow(){if(narrow()){document.body.classList.remove('history-open');$('history-open').setAttribute('aria-expanded','false');}}
 function showView(view){closeSidebarOnNarrow();for(const n of document.querySelectorAll('.view'))n.classList.toggle('hidden',n.id!==`${view}-view`);for(const b of document.querySelectorAll('.nav-item'))b.classList.toggle('active',b.dataset.view===view);if(view==='resources')resources().catch(fail);if(view==='tools')toolCollection().catch(fail);}
-const commands=[['/启动项','开机自启清单与状态'],['/体检','系统与内存、磁盘'],['/进程','进程工作集内存'],['/网络','网卡、DNS、云端 HTTPS'],['/驱动','硬件 ID、故障码、盘内驱动'],['/工具','可打开的系统工具与资源集合'],['/资源','盘内软件、镜像与驱动'],['/安装','便携体检工具 · 确认后安装'],['/报告','新的体检报告 · 确认后保存'],['/救援','无法启动时的准备方案']];
-for(const [cmd,description] of commands){const b=el('button',undefined,'palette-command');b.append(el('code',t(cmd)),el('span',t(description)));b.onclick=()=>{$('palette').close();send(cmd).catch(fail);};$('palette-commands').append(b);}
+const commands=[['/启动项','开机自启清单与状态'],['/体检','系统与内存、磁盘'],['/进程','进程工作集内存'],['/网络','网卡、DNS、云端 HTTPS'],['/驱动',isMac?'网络接口与盘内资源':'硬件 ID、故障码、盘内驱动'],['/工具','可打开的系统工具与资源集合'],['/资源','盘内软件、镜像与驱动'],['/安装','便携体检工具 · 确认后安装'],['/报告','新的体检报告 · 确认后保存'],['/救援','无法启动时的准备方案']].filter(([cmd])=>!isMac||cmd!=='/启动项');
+for(const [cmd,description] of commands){const b=el('button',undefined,'palette-command');b.append(el('code',t(cmd)),el('span',description));b.onclick=()=>{$('palette').close();send(cmd).catch(fail);};$('palette-commands').append(b);}
 document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.view)showView(b.dataset.view);if(b.dataset.prompt){$('question').value=t(b.dataset.prompt);$('question').focus();}if(b.dataset.command)send(b.dataset.command).catch(fail);});
 $('chat-form').onsubmit=e=>{e.preventDefault();send($('question').value).catch(fail);};$('question').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();send($('question').value).catch(fail);}};
 $('engine-select').onchange=engineNote;$('model-settings').onclick=()=>modelSettingsView().catch(fail);$('history-open').onclick=()=>{const open=document.body.classList.toggle('history-open');$('history-open').setAttribute('aria-expanded',String(open));syncSidebarInert();};$('sidebar-toggle').onclick=()=>{setSidebarCollapsed($('sidebar-toggle').getAttribute('aria-expanded')!=='false');};window.addEventListener('resize',applySidebar);window.addEventListener('resize',syncSidebarInert);$('new-chat').onclick=()=>newChat().catch(fail);$('expert-toggle').onclick=()=>{expert=!expert;$('trace-panel').classList.toggle('hidden',!expert);ui($('expert-toggle'),expert?'关闭专业模式':'专业模式');};$('wallet-open').onclick=()=>walletView().catch(fail);$('wallet-top-open').onclick=()=>walletView().catch(fail);$('offline-open').onclick=()=>offline().catch(fail);$('pico-open').onclick=openPicoUI;$('cache-open').onclick=()=>runtimeView().catch(fail);$('dialog-close').onclick=()=>{$('dialog').close();$('dialog-content').replaceChildren();};$('dialog').addEventListener('close',()=>{$('dialog-content').replaceChildren();});$('palette-open').onclick=()=>$('palette').showModal();$('palette-close').onclick=()=>$('palette').close();
@@ -124,7 +126,7 @@ window.addEventListener('resize',syncSidebarInert);
 // Paint and wire the portable interface before loading optional local state.
 // No system inspection, wallet/network call, hashing or Gateway start on this path.
 try{const saved=localStorage.getItem(SIDEBAR_KEY);setSidebarCollapsed(saved==='1',false);}catch{setSidebarCollapsed(false,false);}
-syncSidebarInert();engineNote();
+platformUI();syncSidebarInert();engineNote();
 I18n.init().catch(fail);
 loadSettings().then(engineNote).catch(fail);
 listSessions().catch(fail);

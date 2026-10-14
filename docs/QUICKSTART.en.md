@@ -1,12 +1,12 @@
 # Xiapan Portable AI USB · Quick Start
 
-For version 0.5.2. **Portable AI, a wallet that travels with you, cached programs, offline diagnostics, and a computer maintenance toolkit.**
+For version 0.5.4. **Portable AI, a wallet that travels with you, cached programs, offline diagnostics, and a computer maintenance toolkit.**
 
 ## Copy to a USB drive
 
 Copy **everything inside the fresh master folder** to your USB drive, keeping the folder structure. Use your file manager or the ordinary file-copy mode of a USB distribution tool. Formatting and bootable-drive creation are not required. Wait for copying to finish, then use the launcher on the USB drive.
 
-Prepare each customer's drive from a clean master with an empty `data/` folder. Never distribute your used `data/`: it may contain API keys, a wallet, conversations, and work files. To verify copied files, run `Verify Files.ps1` from the drive root in Windows PowerShell.
+Prepare each customer's drive from a clean master with an empty `data/` folder. Never distribute your used `data/`: it may contain API keys, a wallet, conversations, and work files. To verify copied files, run `Verify Files.ps1` in Windows PowerShell, or open `Verify Files Mac.command` on a Mac (or run it with `sh` in Terminal). Verification reads fixed files and excludes personal `data/`.
 
 ## Start the app
 
@@ -17,7 +17,7 @@ Prepare each customer's drive from a clean master with an empty `data/` folder. 
 
 The lightweight home interface supports English and Chinese. Chat here for everyday tasks, or open **Full PicoClaw** for the official workspace and advanced options. Both interfaces share one persistent AI service. Languages available in third-party tools and the official workspace depend on those products.
 
-On a Mac, the first launch may require system trust or file-access permission. If double-clicking the script does not work, open Terminal, type `sh` followed by a space, drag the `.command` file into Terminal, and press Return. The script copies programs to the computer's cache and sets their executable permissions; it does not disable Gatekeeper. Both Mac builds are available, but testing on physical Macs is still pending.
+On a Mac, the first launch may require system trust or file-access permission. If double-clicking the script does not work, open Terminal, type `sh` followed by a space, drag the `.command` file into Terminal, and press Return. The script copies programs to the computer's cache and sets their executable permissions; it does not disable Gatekeeper. Apple Silicon has passed startup, native file tools, credential restart and exit checks on an ExFAT USB drive. Intel is build-only; first Finder trust and all system permissions still need verification on the target Mac.
 
 ## Choose an AI service
 
@@ -44,6 +44,12 @@ Local diagnostics and tool launchers work without AI, a balance, or an internet 
 - **Mac: 5 built-in system tool shortcuts.** Activity Monitor, Disk Utility, Console, System Information, and Wireless Diagnostics. These open tools already installed on the Mac; they are not third-party Mac applications bundled on the USB drive. Missing tools are shown as unavailable.
 
 The drive includes **3DP Net 21.01, a legacy 2021 network driver collection**, with instructions, as a Windows emergency resource. It is not a universal driver pack and does not automatically match or install drivers. Check the operating system and hardware model first. This product runs inside your operating system; it is not WinPE or a bootable rescue drive.
+
+## Mac networking and startup recovery
+
+The Mac network view shows actual interfaces, their state and addresses, and can open Wireless Diagnostics. macOS provides its system drivers; software for an external adapter must match the model and macOS version. The Windows driver collection does not apply to a Mac. Startup inspection currently supports Windows only, so the Mac homepage offers system information instead.
+
+If macOS cannot start, follow [Apple Recovery instructions](https://support.apple.com/en-us/102518). On Apple Silicon, shut down and hold the power button to reach Options; on Intel, hold Command-R at startup. Confirm backups and the target disk before following [Apple Disk Utility instructions](https://support.apple.com/en-us/102611). This app does not restart into Recovery, erase disks or reinstall the operating system.
 
 ## Before you unplug
 

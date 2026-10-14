@@ -47,5 +47,8 @@ func platformInfo(root string) (uint64, uint64, []Volume, []string) {
 		b, _ := exec.CommandContext(ctx, "sysctl", "-n", "hw.memsize").Output()
 		memory, _ = strconv.ParseUint(strings.TrimSpace(string(b)), 10, 64)
 	}
+	if runtime.GOOS == "darwin" {
+		return memory, available, []Volume{}, []string{"已读取 macOS 系统、架构与总内存；此版本未读取可用内存和磁盘容量，请在活动监视器或系统信息中查看。"}
+	}
 	return memory, available, []Volume{}, []string{"此平台已提供体检与便携路径实现，磁盘详细信息和整机运行仍需对应平台实测。"}
 }

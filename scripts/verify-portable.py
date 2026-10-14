@@ -53,7 +53,7 @@ def main():
     durations = []
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     checks = {'checksums': len(sums), 'empty_shipping_data': True}
-    for english, chinese in [('Start Windows.cmd', '开始使用.cmd'), ('Start Mac.command', '启动 Mac.command'), ('Verify Files.ps1', '校验母盘.ps1')]:
+    for english, chinese in [('Start Windows.cmd', '开始使用.cmd'), ('Start Mac.command', '启动 Mac.command'), ('Verify Files.ps1', '校验母盘.ps1'), ('Verify Files Mac.command', '校验母盘 Mac.command')]:
         assert (master / english).read_bytes() == (master / chinese).read_bytes(), f'Launcher drift: {english}'
     windows_script = (master / 'Start Windows.cmd').read_bytes()
     assert b'\r\r\n' not in windows_script and b'chcp 65001' in windows_script
@@ -80,6 +80,8 @@ def main():
                 while True:
                     try:
                         page = opener.open(base + '/', timeout=.1).read().decode()
+                        assert 'name="xiapan-platform" content="windows"' in page
+                        assert f'name="xiapan-version" content="{info["version"]}"' in page
                         break
                     except (OSError, urllib.error.URLError):
                         if time.monotonic() > deadline or proc.poll() is not None:

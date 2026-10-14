@@ -8,7 +8,7 @@
 
 **軽量な AI インターフェース、持ち運べるウォレットと API キー、PC 上のプログラムキャッシュ、オフラインのメンテナンスツール。**
 
-![Preview](https://img.shields.io/badge/version-0.5.2--portable--preview-8b6b33)
+![Preview](https://img.shields.io/badge/version-0.5.4--portable--preview-8b6b33)
 ![Go](https://img.shields.io/badge/Go-1.24%2B-367a8d)
 ![License](https://img.shields.io/badge/license-MIT-527c46)
 ![AI optional](https://img.shields.io/badge/AI-optional-4c7770)
@@ -16,7 +16,7 @@
 [クイックスタート](#クイックスタート) · [対応プラットフォーム](#対応プラットフォーム) · [USB パッケージの作成](#usb-パッケージの作成) · [貢献ガイド](CONTRIBUTING.md)
 
 > [!NOTE]
-> **現在はプレビュー版です。** パッケージの作成手順は Windows x64、macOS Apple Silicon と Intel に対応します。新しい macOS パッケージは実機未検証です。今回のリモート Mac は接続できませんでした。Windows のツールが Mac でも使えるわけではありません。[製品範囲（中国語）](docs/PRODUCT.md)も確認してください。
+> **現在はプレビュー版です。** パッケージの作成手順は Windows x64、macOS Apple Silicon と Intel に対応します。Apple Silicon は ExFAT の実物 USB で起動、ファイル操作、認証情報変更後の再起動と終了を検証済みです。Intel と Finder の初回許可は未検証です。Windows のツールが Mac でも使えるわけではありません。[製品範囲（中国語）](docs/PRODUCT.md)も確認してください。
 
 ## AI と応急ツールを持ち歩く
 
@@ -64,7 +64,7 @@ Windows の作成手順には **ポータブルツール 9 種と標準ツール
 
 バージョン、ファイル、SHA-256、ライセンスを固定マニフェストに記録し、許可したファイルだけをパッケージにコピーします。ハードウェア識別とドライバーの準備機能はありますが、ドライバーの自動照合・インストール・ロールバックは未実装です。
 
-Mac には Activity Monitor、Disk Utility、Console、System Information、Wireless Diagnostics の 5 つの OS 標準ツールへの入口があります。Mac 実機での起動確認は未完了です。[English quick start](docs/QUICKSTART.en.md) / [中文快速入门](docs/QUICKSTART.zh-CN.md) に USB へのコピー手順と API 設定を記載しています。
+Mac には Activity Monitor、Disk Utility、Console、System Information、Wireless Diagnostics の 5 つの OS 標準ツールへの入口があります。Activity Monitor は実機で起動を確認し、残りの 4 つはシステム上のアプリのパスを確認済みです。[English quick start](docs/QUICKSTART.en.md) / [中文快速入门](docs/QUICKSTART.zh-CN.md) に USB へのコピー手順と API 設定を記載しています。
 
 ## PicoClaw は一つ、画面は二つ
 
@@ -85,7 +85,7 @@ PicoClaw のツールは現在の OS ユーザーの権限で動作します。G
 | プラットフォーム | 検証範囲 |
 | --- | --- |
 | **Windows x64** | 従来のメンテナンスフローは実物 USB で検証済みです。0.5 の Gateway・キャッシュ機能は今回のリリース検証記録で判断してください。 |
-| macOS · Apple Silicon / Intel | 両方のバイナリをパッケージに含めます。初回の信頼・権限設定、実物 USB と別 PC への移動は実機未検証です。今回のリモート Mac は接続できませんでした。 |
+| macOS · Apple Silicon / Intel | Apple Silicon は ExFAT の実物 USB で起動、ファイル操作、認証情報変更後の再起動と終了を検証済みです。Intel、Finder の初回許可と別 PC への移動は未検証です。 |
 | Linux x64 | コアのソースとビルド対象として維持しますが、今回の製品パッケージには含めません。従来の WSL テストは Linux デスクトップ版の出荷検証ではありません。 |
 
 同じドライブに複数 OS 用のプログラムを保存できますが、各 OS 専用の実行ファイルが必要です。**現時点では起動可能なレスキュー OS ではありません。** スタートアップ検査は一般的な Run 項目とスタートアップフォルダーを対象とし、全サービスやタスクを網羅せず、自動無効化もしません。
@@ -97,7 +97,7 @@ PicoClaw のツールは現在の OS ユーザーの権限で動作します。G
 ```powershell
 python scripts/build-picoclaw-pinned.py
 .\scripts\build.ps1
-python scripts/package-portable.py --resources "D:\verified-tool-resources" --output "D:\release\U-PicoClaw-0.5.2-portable-preview"
+python scripts/package-portable.py --resources "D:\verified-tool-resources" --output "D:\release\U-PicoClaw-0.5.4-portable-preview"
 ```
 
 リソース元には固定マニフェストのツールファイルを用意し、出力にはまだ存在しないディレクトリを指定します。個人データをコピーせず、空の data と検証用ハッシュを生成します。新しいパッケージにはこの手順を使用してください。詳細は[開発ガイド（中国語）](docs/DEVELOPMENT.md)を参照してください。

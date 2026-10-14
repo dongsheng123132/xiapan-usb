@@ -4,7 +4,7 @@
 
 ## 当前产品与启动链路
 
-产品范围以 [PRODUCT.md](PRODUCT.md) 为准。`0.5.3-portable-preview` 保留自建轻量首页，并在用户点击“完整 PicoClaw”时打开固定版官方工作台；两个界面接入同一受管理的持久 Gateway。
+产品范围以 [PRODUCT.md](PRODUCT.md) 为准。`0.5.4-portable-preview` 保留自建轻量首页，并在用户点击“完整 PicoClaw”时打开固定版官方工作台；两个界面接入同一受管理的持久 Gateway。
 
 本仓对应**虾盘随身 AI Lite / U-PicoClaw**，主体验为“换台电脑，接着干”：配置、会话、记忆、技能与盘内工作接续。Pro 是品牌家族中既有的 U-Claw（OpenClaw 便携版），独立维护与发行；不要把 Pro 实现塞进 Lite，也不要将它描述成 Lite 的未完成开关。产品场景、钱包与性能口径、已实现/待验收/待开发划分统一见 [产品定位](PRODUCT.md#1-产品定位) 及该文的下一步规格。
 
@@ -43,6 +43,7 @@ git push -u origin codex/macos-portable
 | `cloud.go` | 随盘钱包、余额、充值和凭证接入 |
 | `ui_settings.go` | 界面语言随盘保存与请求语言解析 |
 | `web/` | 浏览器界面，只调用动作核心 |
+| `web/platform.js` | 使用宿主注入的系统、架构和版本，适配 Mac 入口、快捷键与恢复说明；不扫描硬件 |
 | `web/locales.json` | 中→英词典；界面文案的唯一翻译来源 |
 | `catalog/tool-packages.json` | 工具官方来源、版本、许可证、启动参数与便携配置 |
 | `catalog/picoclaw.json` | 固定上游版本、发行变体、三平台核心与 launcher 校验值 |
@@ -69,7 +70,7 @@ git push -u origin codex/macos-portable
 ```powershell
 python scripts/build-picoclaw-pinned.py
 .\scripts\build.ps1
-python scripts/package-portable.py --resources "D:\已验证工具资源" --output "D:\发盘\U-PicoClaw-0.5.3-portable-preview"
+python scripts/package-portable.py --resources "D:\已验证工具资源" --output "D:\发盘\U-PicoClaw-0.5.4-portable-preview"
 ```
 
 1. 固定上游构建脚本校验源码归档，安装锁定前端依赖，应用禁用自升级与 Windows launcher 进程检测的发行补丁，构建核心及 launcher 并更新同一平台清单。不在客户 U 盘执行此脚本，不改为下载 latest/nightly。
@@ -80,6 +81,8 @@ python scripts/package-portable.py --resources "D:\已验证工具资源" --outp
 自带 API 接受兼容 Base URL、Key 和模型 ID；连接预检跟随固定 PicoClaw v0.3.1 OpenAI provider 的 token 参数和 8192 预算，不以低预算聊天测试代替工具调用验证。保存不请求模型，测试只提供一个无操作的 `connection_check` 工具。单元测试用本地假服务验证 Kimi/智谱/Gemini 形式的路径、鉴权隔离与参数，不冒充真实服务验收。Gemini 多轮工具的签名兼容性受固定上游限制，复杂任务应在官方界面配置原生 Gemini。
 
 ## 验收边界
+
+`scripts/verify-platform-ui.cjs` 使用本机夹具和真实 Chromium 验证 Windows、Mac ARM 与 Intel 的界面、双语切换及维护动作绑定（需已有 Playwright，可用 `PLAYWRIGHT_MODULE` 指定模块）。`scripts/verify-mac-release.py` 只在带验收清单、空白 data 的隔离 Mac 目录运行；它读取真实接口/系统/进程、启动本次活动监视器，并以本机假模型验证文件工具和凭证重启。脚本会拒绝已有用户数据，不能把它对准客户使用中的目录。
 
 已产生的平台二进制不等于完成对应系统验收。2026-10-14 在 macOS 15.6.1 Apple Silicon 与真实 ExFAT U 盘上完成启动及固定 Gateway 验收，记录见 `PORTABLE-VALIDATION.md`；Intel 包与首次 Finder 信任仍未验证。
 

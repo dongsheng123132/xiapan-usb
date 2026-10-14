@@ -161,9 +161,13 @@ type Plan struct {
 }
 
 func guide(message string) Plan {
+	return guideForPlatform(message, runtime.GOOS)
+}
+
+func guideForPlatform(message, platform string) Plan {
 	p := Plan{Title: "先了解这台电脑", Summary: "我会先做只读检测，确认环境后给出下一步。", Steps: []string{"读取系统、架构、内存和磁盘信息", "检查盘内资源", "将需要改动的项目列出来，由你选择执行"}, Action: "system.inspect", Mode: "guide"}
 	switch {
-	case containsAny(message, "格式化", "抹盘", "重装", "分区", "启动不了", "开不了机", "蓝屏"):
+	case containsAny(message, "格式化", "抹盘", "重装", "分区", "启动不了", "无法启动", "不能启动", "开不了机", "蓝屏"):
 		p.Title = "系统与启动救援"
 		p.Summary = "先确认能否进入系统，备份重要资料，再选择匹配的救援环境。此预览版提供方案，不执行分区、格式化或重装。"
 		p.Steps = []string{"记录故障和目标电脑", "确认重要资料备份和目标磁盘", "准备经验证的救援镜像；Mac 使用对应恢复流程"}
@@ -192,6 +196,17 @@ func guide(message string) Plan {
 		p.Title = "检查电脑为什么变慢"
 		p.Summary = "先看内存、磁盘剩余空间和系统环境，按证据处理。"
 		p.Steps = []string{"读取硬件与磁盘信息", "检查可用资源与具体症状", "只对有证据的项目做维护，保存前后结果"}
+	}
+	if platform == "darwin" {
+		if p.Title == "系统与启动救援" {
+			p.Summary = "先保护资料，再使用当前 Mac 对应的 macOS 恢复环境；本程序不会抹盘或重装。"
+			p.Steps = []string{"先确认重要资料备份和目标磁盘。", "Apple Silicon 关机后按住电源键进入启动选项；Intel Mac 开机后按住 Command-R。", "在 macOS 恢复中打开磁盘工具，按 Apple 官方说明决定下一步。"}
+			p.Action = "tools.catalog"
+		}
+		if p.Action == "drivers.inspect" {
+			p.Summary = "先检查 Mac 网络接口与地址，再打开无线诊断；本地维护无需模型或钱包额度。"
+			p.Steps = []string{"查看 Wi-Fi 或有线连接及网络接口地址。", "打开无线诊断或系统信息查看设备。", "外接网卡软件按型号与 macOS 版本核对，Windows 驱动包不适用于 Mac。"}
+		}
 	}
 	return p
 }

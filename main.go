@@ -24,7 +24,7 @@ import (
 	"time"
 )
 
-const version = "0.5.3-portable-preview"
+const version = "0.5.4-portable-preview"
 
 //go:embed web/* skills/*/SKILL.md catalog/*.json
 var assets embed.FS
@@ -398,7 +398,7 @@ func newServer(root, base string) (*http.Server, error) {
 		switch filepath.Ext(path) {
 		case ".html":
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			b = []byte(strings.ReplaceAll(string(b), "__XIAPAN_TOKEN__", token))
+			b = []byte(strings.NewReplacer("__XIAPAN_TOKEN__", token, "__XIAPAN_PLATFORM__", runtime.GOOS, "__XIAPAN_ARCH__", runtime.GOARCH, "__XIAPAN_VERSION__", version).Replace(string(b)))
 		case ".css":
 			w.Header().Set("Content-Type", "text/css; charset=utf-8")
 		case ".js":

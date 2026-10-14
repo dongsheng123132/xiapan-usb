@@ -88,6 +88,9 @@ func verifyPortableTool(ctx context.Context, root string, tool PortableTool) (st
 func portableToolRows(root string) []any {
 	rows := []any{}
 	for _, tool := range portableTools() {
+		if tool.Platform != runtime.GOOS+"/"+runtime.GOARCH {
+			continue
+		}
 		// The list checks presence only. Every immutable file is verified before launch.
 		path, err := portableToolPath(root, tool, tool.Executable)
 		ready := err == nil && tool.Platform == runtime.GOOS+"/"+runtime.GOARCH
