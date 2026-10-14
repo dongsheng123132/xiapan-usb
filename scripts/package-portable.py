@@ -205,7 +205,14 @@ if [ ! -f SHA256SUMS ]; then
   echo '缺少校验清单 / SHA256SUMS is missing.' >&2
   exit 1
 fi
-if shasum -a 256 -c SHA256SUMS; then
+NORMALIZED=$(mktemp "${TMPDIR:-/tmp}/xiapan-check.XXXXXX")
+trap 'rm -f "$NORMALIZED"' EXIT HUP INT TERM
+tr -d '\\015' < SHA256SUMS > "$NORMALIZED"
+if [ ! -s "$NORMALIZED" ]; then
+  echo '校验清单为空 / Checksum manifest is empty.' >&2
+  exit 1
+fi
+if shasum -a 256 -c "$NORMALIZED"; then
   echo '固定程序与资源校验通过 / Programs and resources verified. User data/ is excluded.'
 else
   echo '校验未通过，请从干净母盘重新复制缺失或损坏的文件 / Verification failed. Restore missing or damaged files from a clean master.' >&2
@@ -231,7 +238,7 @@ fi
         raise ValueError('Source changed during assembly')
     incomplete.unlink()
     files = sorted(p for p in target.rglob('*') if p.is_file())
-    (target / 'SHA256SUMS').write_text(''.join(f'{digest(p)}  {p.relative_to(target).as_posix()}\n' for p in files), encoding='utf-8')
+    (target / 'SHA256SUMS').write_text(''.join(f'{digest(p)}  {p.relative_to(target).as_posix()}\n' for p in files), encoding='utf-8', newline='\n')
     total_bytes = sum(p.stat().st_size for p in files)
     target.rename(destination)
     print(json.dumps({'root': str(destination), 'files': len(files), 'bytes': total_bytes, **info}, ensure_ascii=False, indent=2))

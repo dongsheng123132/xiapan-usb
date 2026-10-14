@@ -62,11 +62,13 @@ def check_file_verifier(root, checks):
         def verify():
             return subprocess.run(['/bin/sh',str(verifier)],cwd='/',capture_output=True,text=True,timeout=15)
         assert verify().returncode==0
+        (sample/'SHA256SUMS').write_bytes(sums.replace('\n','\r\n').encode())
+        assert verify().returncode==0
         (sample/'data/private.txt').write_text('changed excluded fixture')
         assert verify().returncode==0
         document.write_text('corrupted fixture'); assert verify().returncode!=0
         document.unlink(); assert verify().returncode!=0
-    checks.update({'mac_verifier_valid_files':True,'mac_verifier_excludes_user_data':True,
+    checks.update({'mac_verifier_valid_files':True,'mac_verifier_accepts_crlf':True,'mac_verifier_excludes_user_data':True,
         'mac_verifier_rejects_corruption':True,'mac_verifier_rejects_missing_file':True})
 
 root = Path(sys.argv[1]).resolve()
