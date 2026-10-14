@@ -1,0 +1,98 @@
+{
+  "root": "<USB>/虾盘 Mac 0.5.3 验收",
+  "platform": "darwin/arm64",
+  "paid_model_calls": 0,
+  "measurement": "Process creation to complete HTTP homepage; OS file cache not cleared; excludes browser drawing, Gateway and model latency",
+  "checks": {
+    "transfer_hashes": true,
+    "chinese_space_path": true,
+    "lazy_gateway": true,
+    "offline_local_guide": true,
+    "five_mac_tools_ready": true,
+    "homepage_and_scripts_http_200": true,
+    "no_wallet_created": true,
+    "activity_monitor_actual_launch": true,
+    "explicit_exit": true,
+    "listener_cleanup": true,
+    "release_native_write": true,
+    "release_credential_restart": true,
+    "release_shared_history": true,
+    "owned_process_cleanup": true,
+    "test_data_isolated": true
+  },
+  "startup_ms": [
+    276.53,
+    52.72,
+    39.57
+  ],
+  "release": {
+    "edition": "U-PicoClaw portable AI + emergency toolkit",
+    "version": "0.5.3-portable-preview",
+    "built_at": "2026-10-14T14:27:56.318028+08:00",
+    "source_commit": "d725360714492c5f5f505a039d7ae8500d016a1f",
+    "source_dirty": false,
+    "pico_version": "0.3.1",
+    "platforms": [
+      "windows/amd64",
+      "darwin/arm64",
+      "darwin/amd64"
+    ],
+    "source_fingerprint": "5e43ef666aacb0dd048b67adfadc4ba561f65ef16e3c3a82eca47711ff25ea04",
+    "customer_data_included": false,
+    "local_model_included": false,
+    "bootable": false,
+    "automatic_program_updates": false,
+    "driver_auto_install": false,
+    "portable_tools": [
+      "windirstat",
+      "peazip",
+      "notepadpp",
+      "sumatrapdf",
+      "explorerpp",
+      "everything",
+      "crystaldiskinfo",
+      "photorec",
+      "testdisk"
+    ]
+  },
+  "actual_version": "0.5.3-portable-preview",
+  "mac_tools": [
+    {
+      "id": "mac-activity-monitor",
+      "name": "macOS 活动监视器",
+      "ready": true
+    },
+    {
+      "id": "mac-disk-utility",
+      "name": "macOS 磁盘工具",
+      "ready": true
+    },
+    {
+      "id": "mac-console",
+      "name": "macOS 控制台",
+      "ready": true
+    },
+    {
+      "id": "mac-system-information",
+      "name": "macOS 系统信息",
+      "ready": true
+    },
+    {
+      "id": "mac-wireless-diagnostics",
+      "name": "macOS 无线诊断",
+      "ready": true
+    }
+  ],
+  "fixture_model_requests": 3,
+  "ok": true,
+  "remaining_test_processes": [],
+  "test_data_archived": true,
+  "user_data_directory_empty": true,
+  "limits": [
+    "Apple Silicon macOS 15.6.1 / arm64 only; Intel Mac is build-only.",
+    "Model requests use a localhost fixture; no paid model or wallet calls.",
+    "Startup timing excludes browser drawing, Gateway and model latency; OS cache was not cleared.",
+    "Finder first-trust and complete interaction of all five Mac system tools were not tested.",
+    "Mac ARM64 acceptance subset copied to USB; full shipping master verified separately on Windows."
+  ]
+}
