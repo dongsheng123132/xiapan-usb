@@ -1,0 +1,31 @@
+{
+  "version": "0.5.4-portable-preview",
+  "source_commit": "ae2fe215dcdd8cebeb3841e943698e56c599fd28",
+  "master": "<MASTER>/虾盘随身AI盘-0.5.4",
+  "measurement": "process creation to complete HTTP homepage; excludes browser rendering, Gateway and model latency",
+  "storage_note": "Storage not classified; record the tested machine and medium separately",
+  "cache_note": "Checksums read before timing; OS file caches are not cleared. This is not a cold-boot benchmark.",
+  "startup_ms": [
+    166.09,
+    115.54,
+    135.73,
+    112.08,
+    134.93,
+    112.2,
+    135.72
+  ],
+  "median_ms": 134.93,
+  "max_ms": 166.09,
+  "paid_model_calls": 0,
+  "checks": {
+    "checksums": 1619,
+    "empty_shipping_data": true,
+    "bilingual_launchers_and_guides": true,
+    "lazy_gateway": true,
+    "offline_guide": true,
+    "retired_local_model": true,
+    "nine_portable_tools_registered": true,
+    "no_wallet_created": true,
+    "explicit_exit": true
+  }
+}

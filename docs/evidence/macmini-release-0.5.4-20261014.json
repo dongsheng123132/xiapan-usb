@@ -1,0 +1,109 @@
+{
+  "root": "<USB>/虾盘 Mac 0.5.4 验收",
+  "platform": "darwin/arm64",
+  "paid_model_calls": 0,
+  "measurement": "Process creation to complete HTTP homepage; OS file cache not cleared; excludes browser drawing, Gateway and model latency",
+  "checks": {
+    "transfer_hashes": true,
+    "mac_verifier_valid_files": true,
+    "mac_verifier_accepts_crlf": true,
+    "mac_verifier_excludes_user_data": true,
+    "mac_verifier_rejects_corruption": true,
+    "mac_verifier_rejects_missing_file": true,
+    "chinese_space_path": true,
+    "native_platform_metadata": true,
+    "lazy_gateway": true,
+    "offline_local_guide": true,
+    "mac_recovery_guidance": true,
+    "mac_network_interfaces": true,
+    "mac_readonly_diagnostics": true,
+    "mac_catalog_excludes_windows": true,
+    "five_mac_tools_ready": true,
+    "homepage_and_scripts_http_200": true,
+    "no_wallet_created": true,
+    "activity_monitor_actual_launch": true,
+    "explicit_exit": true,
+    "listener_cleanup": true,
+    "release_native_write": true,
+    "release_credential_restart": true,
+    "release_shared_history": true,
+    "owned_process_cleanup": true,
+    "test_data_isolated": true
+  },
+  "startup_ms": [
+    244.54,
+    58.45,
+    47.26
+  ],
+  "release": {
+    "edition": "U-PicoClaw portable AI + emergency toolkit",
+    "version": "0.5.4-portable-preview",
+    "built_at": "2026-10-14T20:03:13.63909+08:00",
+    "source_commit": "ae2fe215dcdd8cebeb3841e943698e56c599fd28",
+    "source_dirty": false,
+    "pico_version": "0.3.1",
+    "platforms": [
+      "windows/amd64",
+      "darwin/arm64",
+      "darwin/amd64"
+    ],
+    "source_fingerprint": "539c98ecb1df9d8cc318cbf4d43f28e8afdde4816ef5c1db7ebe47fb58f00b78",
+    "customer_data_included": false,
+    "local_model_included": false,
+    "bootable": false,
+    "automatic_program_updates": false,
+    "driver_auto_install": false,
+    "portable_tools": [
+      "windirstat",
+      "peazip",
+      "notepadpp",
+      "sumatrapdf",
+      "explorerpp",
+      "everything",
+      "crystaldiskinfo",
+      "photorec",
+      "testdisk"
+    ]
+  },
+  "actual_version": "0.5.4-portable-preview",
+  "network_interface_count": 27,
+  "mac_tools": [
+    {
+      "id": "mac-activity-monitor",
+      "name": "macOS 活动监视器",
+      "ready": true
+    },
+    {
+      "id": "mac-disk-utility",
+      "name": "macOS 磁盘工具",
+      "ready": true
+    },
+    {
+      "id": "mac-console",
+      "name": "macOS 控制台",
+      "ready": true
+    },
+    {
+      "id": "mac-system-information",
+      "name": "macOS 系统信息",
+      "ready": true
+    },
+    {
+      "id": "mac-wireless-diagnostics",
+      "name": "macOS 无线诊断",
+      "ready": true
+    }
+  ],
+  "fixture_model_requests": 3,
+  "ok": true,
+  "remaining_test_processes": [],
+  "test_data_archived": true,
+  "user_data_directory_empty": true,
+  "limits": [
+    "Apple Silicon backend tested on physical ExFAT USB; Intel is build-only.",
+    "Real Chromium platform UI tests used isolated local action fixtures.",
+    "Model tests use localhost fixtures; no paid model or wallet calls.",
+    "Finder first-trust and complete interaction of every Mac system tool remain unverified.",
+    "The Mac USB copy is an ARM acceptance subset; the full three-platform master was verified separately."
+  ]
+}
