@@ -33,7 +33,10 @@ func (c *picoProcessControl) kill() {
 			// Only a confirmed stopped child keeps the original PID/group
 			// reserved. An exited child can have been reaped; never use its
 			// former PGID to send a signal.
-			if state.Stopped() {
+			// Go's BSD WaitStatus methods classify a SIGSTOP report as
+			// Continued. We requested WUNTRACED without WCONTINUED, so
+			// the POSIX stop tag identifies a genuinely stopped child.
+			if state&0xff == 0x7f {
 				if syscall.Kill(-pid, syscall.SIGKILL) != nil {
 					_ = c.cmd.Process.Kill()
 				}

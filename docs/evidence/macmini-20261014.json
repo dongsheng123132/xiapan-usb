@@ -1,0 +1,53 @@
+{
+  "tested_on": "2026-10-14",
+  "os": "macOS 15.6.1",
+  "architecture": "arm64",
+  "physical_usb": {
+    "filesystem": "ExFAT",
+    "capacity_bytes": 62914543616
+  },
+  "paid_model_calls": 0,
+  "original_release": "0.5.2-portable-preview",
+  "original_startup_ms": [
+    537.33,
+    46.74,
+    47.0
+  ],
+  "original_smoke_checks": {
+    "transfer_hashes": true,
+    "chinese_space_path": true,
+    "lazy_gateway": true,
+    "offline_local_guide": true,
+    "five_mac_tools_ready": true,
+    "homepage_and_scripts_http_200": true,
+    "no_wallet_created": true,
+    "activity_monitor_actual_launch": true,
+    "explicit_exit": true,
+    "listener_cleanup": true
+  },
+  "original_failure": "=== RUN   TestPinnedGatewayIntegration\n    gateway_test.go:183: PicoClaw 已退出，请检查随盘模型配置\n--- FAIL: TestPinnedGatewayIntegration (7.15s)\nFAIL\n",
+  "fix": "Recognize the POSIX stopped-child tag with WUNTRACED and no WCONTINUED",
+  "integration": {
+    "native": {
+      "passed": true,
+      "gateway_seconds": 6.15,
+      "process_cleanup_regression": true,
+      "proofs": [
+        "gateway_test.go:298: Restart returned replacement=48944 original=48936 original_wait_alive=false original_os_alive=false launcher=48937",
+        "gateway_test.go:363: Restart returned replacement=48955 original=48947 original_wait_alive=false original_os_alive=false launcher=48948",
+        "gateway_test.go:370: verified persistent PID, native write, shared history, credential synchronization (both UIs), launcher auth, native Restart handoff (both UIs), disabled updates and cleanup on darwin/arm64"
+      ]
+    },
+    "usb": {
+      "passed": true,
+      "gateway_seconds": 9.43,
+      "process_cleanup_regression": true,
+      "proofs": [
+        "gateway_test.go:298: Restart returned replacement=48994 original=48985 original_wait_alive=false original_os_alive=false launcher=48987",
+        "gateway_test.go:363: Restart returned replacement=49003 original=48996 original_wait_alive=false original_os_alive=false launcher=48997",
+        "gateway_test.go:370: verified persistent PID, native write, shared history, credential synchronization (both UIs), launcher auth, native Restart handoff (both UIs), disabled updates and cleanup on darwin/arm64"
+      ]
+    }
+  },
+  "remaining_test_processes": []
+}

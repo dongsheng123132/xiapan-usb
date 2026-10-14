@@ -8,7 +8,7 @@
 
 **A portable AI USB drive: a lightweight interface, your wallet and API key, local program caching, and emergency maintenance tools.**
 
-![Preview](https://img.shields.io/badge/version-0.5.2--portable--preview-8b6b33)
+![Preview](https://img.shields.io/badge/version-0.5.3--portable--preview-8b6b33)
 ![Go](https://img.shields.io/badge/Go-1.24%2B-367a8d)
 ![License](https://img.shields.io/badge/license-MIT-527c46)
 ![AI optional](https://img.shields.io/badge/AI-optional-4c7770)
@@ -110,7 +110,7 @@ Maintainers need Go, PowerShell and Python 3.11+. Rebuilding the frozen official
 ```powershell
 python scripts/build-picoclaw-pinned.py
 .\scripts\build.ps1
-python scripts/package-portable.py --resources "D:\verified-tool-resources" --output "D:\release\U-PicoClaw-0.5.2-portable-preview"
+python scripts/package-portable.py --resources "D:\verified-tool-resources" --output "D:\release\U-PicoClaw-0.5.3-portable-preview"
 ```
 
 The resource path must contain the approved tool files. The output must be a new directory. The packager validates hashes, creates a clean data directory and writes release checksums; it does not copy the source drive’s personal data. Use this recipe instead of the historical package-genie script. See the [development guide](docs/DEVELOPMENT.md) for prerequisites and acceptance checks.
