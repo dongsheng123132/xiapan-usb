@@ -96,7 +96,7 @@ def main():
             if not slot.get(path_key) or not slot.get(hash_key):
                 raise ValueError(f'Core and official launcher must both be pinned: {platform}')
             relative = slot[path_key]
-            copy_checked(checked_path(resources, relative), checked_path(target, 'app/' + relative), slot[hash_key])
+            copy_checked(checked_path(resources, 'app/' + relative), checked_path(target, 'app/' + relative), slot[hash_key])
     build_version = subprocess.check_output([str(target / '虾盘.exe'), 'version'], timeout=10).decode().strip()
     if build_version != build['version']:
         raise ValueError('Unexpected application build version')
