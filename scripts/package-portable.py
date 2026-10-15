@@ -133,7 +133,7 @@ def main():
         for app in sorted(p for p in apps_root.iterdir() if p.is_dir()):
             copy_public_tree(app, target / 'app/portable-apps' / app.name)
     # This known historical driver kit is optional and explicitly limited to old hardware.
-    driver_source = resources / '05-旧网卡离线驱动-可选'
+    driver_source = resources / 'drivers/windows-x64/3dp-net-21.01'
     driver_dest = target / 'drivers/windows-x64/3dp-net-21.01'
     for name in ['3DP_Net_v2101.exe', '使用前先看.md', 'INF-DRIVERS.json', 'INSPECTION.json', 'LICENSE-SOURCE.txt', 'MANIFEST.json', 'SHA256SUMS.txt']:
         copy_checked(checked_path(driver_source, name), driver_dest / name)
