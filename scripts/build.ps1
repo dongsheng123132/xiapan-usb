@@ -1,4 +1,4 @@
-param([switch]$FingerprintOnly)
+﻿param([switch]$FingerprintOnly)
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
