@@ -829,5 +829,119 @@
       "Everything.lng": "84e0ae09a9e268424ce85a85135c704c534ff60f92e150413b9df05a88979be7"
     },
     "bytes": 3308277
+  },
+  {
+    "id": "u-claw-win",
+    "name": "U-Claw 随身 AI · Windows",
+    "version": "0.5.4",
+    "platform": "windows/amd64",
+    "directory": "app/portable-apps/u-claw",
+    "executable": "Windows-Start.bat",
+    "category": "随盘 AI 应用",
+    "description": "OpenClaw 便携 AI 工作台：本地网关 + 浏览器界面，Agent 与技能随盘保存",
+    "license": "MIT",
+    "official_url": "https://github.com/dongsheng123132/u-claw",
+    "portable_note": "首次插入联网自动准备运行时（node+openclaw，npmmirror 国内镜像）；配置、Agent 与数据随盘保存。",
+    "args": [],
+    "init_files": {},
+    "files": {
+      "Windows-Start.bat": "7e0e0b6fb8217b9f4f46b5b96c568b888a4fe5a5db05ad52c6431ea87227229d"
+    },
+    "bytes": 0
+  },
+  {
+    "id": "u-claw-mac-arm64",
+    "name": "U-Claw 随身 AI · Mac(Apple Silicon)",
+    "version": "0.5.4",
+    "platform": "darwin/arm64",
+    "directory": "app/portable-apps/u-claw",
+    "executable": "Mac-Start.command",
+    "category": "随盘 AI 应用",
+    "description": "OpenClaw 便携 AI 工作台：本地网关 + 浏览器界面，Agent 与技能随盘保存",
+    "license": "MIT",
+    "official_url": "https://github.com/dongsheng123132/u-claw",
+    "portable_note": "首次插入联网自动准备运行时（node+openclaw，npmmirror 国内镜像）；配置、Agent 与数据随盘保存。",
+    "args": [],
+    "init_files": {},
+    "files": {
+      "Mac-Start.command": "0c6e90d0d398e98aab7af05d445dcfbd4d3f171ea8abf81d5e356a74fe578a0f"
+    },
+    "bytes": 0
+  },
+  {
+    "id": "u-claw-mac-x64",
+    "name": "U-Claw 随身 AI · Mac(Intel)",
+    "version": "0.5.4",
+    "platform": "darwin/amd64",
+    "directory": "app/portable-apps/u-claw",
+    "executable": "Mac-Start.command",
+    "category": "随盘 AI 应用",
+    "description": "OpenClaw 便携 AI 工作台：本地网关 + 浏览器界面，Agent 与技能随盘保存",
+    "license": "MIT",
+    "official_url": "https://github.com/dongsheng123132/u-claw",
+    "portable_note": "首次插入联网自动准备运行时（node+openclaw，npmmirror 国内镜像）；配置、Agent 与数据随盘保存。",
+    "args": [],
+    "init_files": {},
+    "files": {
+      "Mac-Start.command": "0c6e90d0d398e98aab7af05d445dcfbd4d3f171ea8abf81d5e356a74fe578a0f"
+    },
+    "bytes": 0
+  },
+  {
+    "id": "u-dsh-web-win",
+    "name": "U-DSH DeepSeek 网页版 · Windows",
+    "version": "0.1.2",
+    "platform": "windows/amd64",
+    "directory": "app/portable-apps/u-dsh",
+    "executable": "启动 U-DSH Web.bat",
+    "category": "随盘 AI 应用",
+    "description": "DeepSeek Harness 便携内核，浏览器即开即用；会话与凭据随盘保存",
+    "license": "MIT",
+    "official_url": "https://github.com/dongsheng123132/u-dsh-deepseek-harness-portable",
+    "portable_note": "跨平台 Web 形态（内核 --profile web）；首次插入联网自动准备 node 运行时。Windows 桌面版（含设备钱包）见 GitHub Releases。",
+    "args": [],
+    "init_files": {},
+    "files": {
+      "启动 U-DSH Web.bat": "06acc10551d939156691106dbc3583932a202514b8326cf748c3e0daca9c1cae"
+    },
+    "bytes": 0
+  },
+  {
+    "id": "u-dsh-web-mac-arm64",
+    "name": "U-DSH DeepSeek 网页版 · Mac(Apple Silicon)",
+    "version": "0.1.2",
+    "platform": "darwin/arm64",
+    "directory": "app/portable-apps/u-dsh",
+    "executable": "启动 U-DSH Web.command",
+    "category": "随盘 AI 应用",
+    "description": "DeepSeek Harness 便携内核，浏览器即开即用；会话与凭据随盘保存",
+    "license": "MIT",
+    "official_url": "https://github.com/dongsheng123132/u-dsh-deepseek-harness-portable",
+    "portable_note": "跨平台 Web 形态（内核 --profile web）；首次插入联网自动准备 node 运行时。",
+    "args": [],
+    "init_files": {},
+    "files": {
+      "启动 U-DSH Web.command": "04dcb3b59943d926e76174526d53488ef9edec53da011db4f0e559afbb28918f"
+    },
+    "bytes": 0
+  },
+  {
+    "id": "u-dsh-web-mac-x64",
+    "name": "U-DSH DeepSeek 网页版 · Mac(Intel)",
+    "version": "0.1.2",
+    "platform": "darwin/amd64",
+    "directory": "app/portable-apps/u-dsh",
+    "executable": "启动 U-DSH Web.command",
+    "category": "随盘 AI 应用",
+    "description": "DeepSeek Harness 便携内核，浏览器即开即用；会话与凭据随盘保存",
+    "license": "MIT",
+    "official_url": "https://github.com/dongsheng123132/u-dsh-deepseek-harness-portable",
+    "portable_note": "跨平台 Web 形态（内核 --profile web）；首次插入联网自动准备 node 运行时。",
+    "args": [],
+    "init_files": {},
+    "files": {
+      "启动 U-DSH Web.command": "04dcb3b59943d926e76174526d53488ef9edec53da011db4f0e559afbb28918f"
+    },
+    "bytes": 0
   }
 ]

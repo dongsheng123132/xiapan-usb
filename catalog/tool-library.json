@@ -191,5 +191,53 @@
     "platform": "windows/amd64",
     "ready": false,
     "reason": "官方便携版已确认；本机启动未通过验收，暂不随包执行。"
+  },
+  {
+    "id": "network-driver-offline",
+    "name": "万能网卡驱动（驱动总裁/驱动精灵 离线版）",
+    "category": "网络与连接",
+    "description": "老机（Win7/8）断网急救第一关：离线网卡驱动包，装机即装网卡驱动",
+    "official_url": "https://www.win10zhi.com/drivers/",
+    "portable_note": "驱动总裁/驱动精灵离线完整版，下载后放到本盘 drivers/；3DP Net 已内置可直接用。",
+    "reason": "驱动包体积大（数 GB）且频繁更新，按需下载放入盘内，不随母盘分发。",
+    "license": "各工具自有许可",
+    "platform": "Windows",
+    "ready": false
+  },
+  {
+    "id": "runtime-bundle",
+    "name": "运行库合集（VC++/.NET/DirectX）",
+    "category": "软件兼容",
+    "description": "老软件启动缺 DLL（vcruntime/msvcp/d3d）时一键补齐，Win7/8 高频问题",
+    "official_url": "https://www.techpowerup.com/download/visual-c-redistributable-runtime-package-all-in-one/",
+    "portable_note": "Visual C++ 运行库合集（2015-2022）+ .NET Framework 离线安装包 + DirectX End-User Runtime，解压即用。",
+    "reason": "官方安装包允许自行分发，但体积约 200MB，按需下载放入盘内。",
+    "license": "微软分发许可",
+    "platform": "Windows",
+    "ready": false
+  },
+  {
+    "id": "wepe",
+    "name": "微PE（WinPE 维护环境）",
+    "category": "启动与救援",
+    "description": "老机蓝屏/引导损坏/无法进系统时，从 PE 进系统做备份与修复",
+    "official_url": "https://www.wepe.com.cn/",
+    "portable_note": "微PE 工具箱免安装版（生成 ISO 或用 Ventoy 引导）；配合本盘 Ventoy 底座使用。",
+    "reason": "PE 镜像与工具由官网发布，按需下载并校验后放入 images/ 或独立 PE 盘。",
+    "license": "微PE 官方许可",
+    "platform": "Windows",
+    "ready": false
+  },
+  {
+    "id": "dismpp",
+    "name": "Dism++（系统镜像与引导修复）",
+    "category": "系统维护",
+    "description": "离线安装/更新系统镜像、清理、引导修复、驱动注入；Win7/8 系统维护利器",
+    "official_url": "https://github.com/Chuyu-Team/Dism-Multi-language",
+    "portable_note": "绿色单文件（Dism++x64.exe），放入盘内工具目录即用；可注入网卡驱动到离线系统。",
+    "reason": "作者声明停止维护，官网/镜像站下载后校验 SHA256 再使用。",
+    "license": "开源免费",
+    "platform": "Windows",
+    "ready": false
   }
 ]

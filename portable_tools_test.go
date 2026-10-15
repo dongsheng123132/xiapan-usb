@@ -85,8 +85,8 @@ func TestToolLibraryDoesNotClaimUnpreparedTools(t *testing.T) {
 func TestPortableToolsRequireExplicitConfirmationAndPackage(t *testing.T) {
 	root := t.TempDir()
 	tools := portableTools()
-	if len(tools) != 9 {
-		t.Fatal("expected nine pinned portable tools")
+	if len(tools) != 15 {
+		t.Fatal("expected fifteen pinned portable tools")
 	}
 	for _, tool := range tools {
 		if _, err := launchRegisteredTool(context.Background(), root, tool.ID, false); err == nil {

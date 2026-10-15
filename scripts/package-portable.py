@@ -126,6 +126,12 @@ def main():
         copy_checked(ROOT / name, target / 'app' / name)
     copy_public_tree(ROOT / 'catalog', target / 'app/catalog')
     copy_checked(ROOT / 'dist/build-manifest.json', target / 'app/build-manifest.json')
+    # Whole portable app bundles (u-claw / u-dsh): copy the complete verified tree
+    # from the resources source. User data/ is never part of a resources source.
+    apps_root = resources / 'app/portable-apps'
+    if apps_root.is_dir():
+        for app in sorted(p for p in apps_root.iterdir() if p.is_dir()):
+            copy_public_tree(app, target / 'app/portable-apps' / app.name)
     # This known historical driver kit is optional and explicitly limited to old hardware.
     driver_source = resources / '05-旧网卡离线驱动-可选'
     driver_dest = target / 'drivers/windows-x64/3dp-net-21.01'

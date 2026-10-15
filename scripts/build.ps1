@@ -17,7 +17,7 @@ function Get-SourceEvidence {
     }
   }
   foreach ($file in Get-ChildItem -LiteralPath (Join-Path $projectRoot 'web') -Recurse -File) {
-    $relativePaths.Add([IO.Path]::GetRelativePath($projectRoot, $file.FullName).Replace('\', '/'))
+    $relativePaths.Add($file.FullName.Substring($projectRoot.Length).TrimStart('\', '/').Replace('\', '/'))
   }
   foreach ($file in Get-ChildItem -LiteralPath (Join-Path $projectRoot 'catalog') -File -Filter '*.json') {
     $relativePaths.Add('catalog/' + $file.Name)
