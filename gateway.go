@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
@@ -267,18 +266,26 @@ func ensurePicoGateway(ctx context.Context, root string) (*picoGatewayRuntime, e
 	// After a crashed wrapper a native child may still own the same data. Never
 	// overwrite its config, and never use an on-disk PID as a kill target.
 	pidPath, _ := writablePath(root, "data", "pico", ".picoclaw.pid")
-	if b, e := os.ReadFile(pidPath); e == nil {
-		var previous struct {
-			Port int `json:"port"`
-		}
-		if json.Unmarshal(b, &previous) == nil && previous.Port > 0 && previous.Port < 65536 {
-			if resp, e := localHTTP(400 * time.Millisecond).Get("http://127.0.0.1:" + strconv.Itoa(previous.Port) + "/health"); e == nil {
-				resp.Body.Close()
-				if resp.StatusCode == http.StatusOK {
-					return nil, errors.New("本盘已有 PicoClaw 服务运行，请先从原窗口退出；未改写配置或结束其他进程")
+	if rec, ok := readPicoPidRecord(root); ok {
+		if pid := healthPID(picoGatewayAddress(rec)); pid == rec.PID {
+			if picoOrphanOwnedByThisDrive(root, rec) {
+				// The wrapper that started this gateway is gone (we hold the
+				// state lock), so the service is a verified orphan of this
+				// drive. Recover automatically instead of forcing the user to
+				// exit a previous window by hand. Config is left untouched;
+				// only the stale pid file is removed after the service exits.
+				if err := stopVerifiedPicoOrphan(rec); err != nil {
+					return nil, fmt.Errorf("本盘旧 AI 服务仍在运行且自动停止失败（%v）；请在任务管理器中结束进程 PID %d 后重试", err, rec.PID)
 				}
+				_ = os.Remove(pidPath)
+			} else {
+				return nil, errors.New("本盘已有 PicoClaw 服务运行，请先从原窗口退出；未改写配置或结束其他进程")
 			}
 		}
+		// pid == 0: the recorded port is dead, a stale record overwritten by
+		// the fresh start below.
+		// pid != rec.PID: the recorded port is owned by an unrelated process;
+		// it is not our gateway, so it does not block a fresh start.
 	}
 	p := picoManifest()
 	slot, ok := p.currentSlot()
