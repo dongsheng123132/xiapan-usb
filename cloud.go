@@ -73,16 +73,29 @@ func remoteJSON(ctx context.Context, base, path, method, key string, input, outp
 	}
 	defer response.Body.Close()
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		body, _ := io.ReadAll(io.LimitReader(response.Body, 512))
+		detail := strings.TrimSpace(string(body))
+		if detail == "" {
+			detail = "（响应体为空）"
+		}
+		hint := ""
 		switch response.StatusCode {
 		case 401:
-			return errors.New("凭证未通过验证，请检查所选服务的 API Key 或钱包")
+			if key == "" {
+				hint = "；本次请求未携带 API Key（未填写或已被清除）"
+			} else {
+				hint = "；凭证未通过验证，请检查所选服务的 API Key 或钱包"
+			}
 		case 402, 403:
-			return errors.New("云端拒绝本次请求；可能是额度不足或模型权限受限，请检查钱包")
+			hint = "；可能是额度不足或模型权限受限，请检查钱包"
+		case 404:
+			hint = "；请检查 API 基础地址是否正确（通常以 /v1 结尾）"
+		case 400:
+			hint = "；服务商可能不支持 tools/tool_choice，或 max_tokens=8192 超出该模型上限"
 		case 429:
-			return errors.New("云端请求较多，请稍后重试")
-		default:
-			return fmt.Errorf("云端返回 HTTP %d，请稍后重试", response.StatusCode)
+			hint = "；云端请求较多，请稍后重试"
 		}
+		return fmt.Errorf("云端返回 HTTP %d%s（请求地址 %s，服务端响应：%s）", response.StatusCode, hint, address, detail)
 	}
 	if err := json.NewDecoder(io.LimitReader(response.Body, 4<<20)).Decode(output); err != nil {
 		return errors.New("云端响应格式异常")

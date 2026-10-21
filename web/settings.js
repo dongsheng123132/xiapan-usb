@@ -19,8 +19,8 @@ async function modelSettingsView(){
  const payload=()=>({expected_revision:current.revision,source:source.value,base_url:base.value,model:model.value,api_key:key.value,clear_api_key:clear.checked});
  const controls=el('div',undefined,'button-row');
  const test=button('测试连接','settings.model.test',async()=>{setFormBusy(true);ui(status,'正在测试模型与工具调用…');try{const d=await run('settings.model.test',payload());ui(status,d.note);}catch(e){ui(status,e.message);}finally{setFormBusy(false);}},'secondary');test.id='model-test';
- const testNote=el('p','测试会向所选服务商发送 1 次模型请求，可能计费；仅保存无需测试。');testNote.id='model-test-note';test.setAttribute('aria-describedby','model-test-note');
- const save=button('保存并使用','settings.model.save',async()=>{setFormBusy(true);try{modelSettings=await run('settings.model.save',payload());key.value='';$('engine-select').value='pico';engineNote();$('dialog').close();toast('模型已保存到本盘');}catch(e){ui(status,e.message);}finally{setFormBusy(false);}});save.id='model-save';
+ const testNote=el('p','测试只验证连接，不会保存；要实际使用请点「保存并使用」。测试会向所选服务商发送 1 次模型请求，可能计费。');testNote.id='model-test-note';test.setAttribute('aria-describedby','model-test-note');
+ const save=button('保存并使用','settings.model.save',async()=>{setFormBusy(true);try{const saved=await run('settings.model.save',payload());modelSettings=saved;key.value='';if(saved&&saved.warning){ui(status,saved.warning);toast('设置已保存，但还需补填 API Key');return;}if(source.value==='custom'&&saved&&saved.has_api_key===false){ui(status,'设置已保存，但当前没有 API Key；聊天前请重新打开设置补填。');return;}$('engine-select').value='pico';engineNote();$('dialog').close();toast('模型已保存到本盘');}catch(e){ui(status,e.message);}finally{setFormBusy(false);}});save.id='model-save';
  const cloudWallet=button('打开虾盘云钱包','wallet.ensure',()=>walletView(),'text-button');
  const setFormBusy=value=>{for(const input of form.querySelectorAll('input,select,button'))input.disabled=value;};
  const update=()=>{const custom=source.value==='custom';for(const node of [customHelp,providerHelp,base.parentElement,key.parentElement,clearLabel])node.classList.toggle('hidden',!custom);cloudWallet.classList.toggle('hidden',custom);};source.onchange=update;

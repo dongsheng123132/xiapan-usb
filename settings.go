@@ -88,6 +88,8 @@ func modelSettingsAction(ctx context.Context, root, id string, input map[string]
 	next.Source = str(input, "source")
 	next.Model = strings.TrimSpace(str(input, "model"))
 	next.BaseURL = strings.TrimRight(strings.TrimSpace(str(input, "base_url")), "/")
+	addressChanged := next.BaseURL != s.BaseURL || s.Source != "custom"
+	keyDropped := false
 	if next.Source == "cloud" {
 		next.BaseURL = ""
 		next.APIKey = ""
@@ -97,7 +99,7 @@ func modelSettingsAction(ctx context.Context, root, id string, input map[string]
 	}
 	if next.Source == "custom" {
 		// Never silently send a saved credential to a newly entered endpoint.
-		if next.BaseURL != s.BaseURL || s.Source != "custom" {
+		if addressChanged {
 			next.APIKey = ""
 		}
 		if key := str(input, "api_key"); key != "" {
@@ -111,6 +113,7 @@ func modelSettingsAction(ctx context.Context, root, id string, input map[string]
 		lock.Unlock()
 		return nil, err
 	}
+	keyDropped = next.Source == "custom" && addressChanged && s.APIKey != "" && next.APIKey == ""
 	if id == "settings.model.save" {
 		next.Revision = uniqueID()
 		b, _ := json.MarshalIndent(next, "", "  ")
@@ -142,11 +145,18 @@ func modelSettingsAction(ctx context.Context, root, id string, input map[string]
 		if err != nil {
 			return nil, fmt.Errorf("设置已保存，但 PicoClaw 尚未同步：%w", err)
 		}
-		return settingsView(next), nil
+		view := settingsView(next)
+		if keyDropped {
+			view["warning"] = "服务地址已修改，上一把 API Key 已按安全策略清除；当前没有保存 Key，请重新填写后再保存"
+		}
+		return view, nil
 	}
 	lock.Unlock()
 	if id != "settings.model.test" {
 		return nil, errors.New("未知模型设置动作")
+	}
+	if keyDropped {
+		return nil, errors.New("服务地址已修改，上一把 API Key 已按安全策略清除，请重新填写 API Key 后再测试")
 	}
 	key, base := next.APIKey, next.BaseURL
 	if next.Source == "cloud" {
