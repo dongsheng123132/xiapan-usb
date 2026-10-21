@@ -505,5 +505,11 @@
   "使用无线诊断和系统信息查看当前 Mac 的网络设备。": "Use Wireless Diagnostics and System Information to inspect this Mac’s network devices.",
   "外接网卡软件需匹配设备型号与 macOS 版本；盘内 Windows 驱动包不适用于 Mac。": "External adapter software must match its model and macOS version; the Windows driver collection does not apply to a Mac.",
   "此检查提供 macOS 网络接口与地址；不读取 Windows 硬件 ID、INF 或设备故障码，也不会安装驱动。": "This check provides macOS network interfaces and addresses. Windows hardware IDs, INF files and device error codes are not read, and no drivers are installed.",
-  "已读取 macOS 系统、架构与总内存；此版本未读取可用内存和磁盘容量，请在活动监视器或系统信息中查看。": "macOS, architecture and total memory were read. This version does not read available memory or disk capacity; view them in Activity Monitor or System Information."
+  "已读取 macOS 系统、架构与总内存；此版本未读取可用内存和磁盘容量，请在活动监视器或系统信息中查看。": "macOS, architecture and total memory were read. This version does not read available memory or disk capacity; view them in Activity Monitor or System Information.",
+  "U 盘精灵": "USB Genie",
+  "打开左侧菜单与对话记录": "Open the side menu and conversation history",
+  "直接把电脑问题发给它；不联网时，左侧工具包里的检测和应急工具照常可用。": "Just describe the computer problem. Without a network, the detection and emergency tools in the toolbox on the left still work.",
+  "动手前先备份。": "Back up first.",
+  "分区、引导和克隆都可能丢数据；当前版本只提供方案和工具入口，不会自动执行这类操作。": "Partitioning, boot configuration and cloning can all lose data. This version only offers plans and tool entry points and never performs these operations automatically.",
+  "把软件包、镜像或驱动放进 packages、images、drivers 目录后，会自动列在这里。": "Put packages, images or drivers into the packages, images or drivers folders and they will be listed here."
 }
