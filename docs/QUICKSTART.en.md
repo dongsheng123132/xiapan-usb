@@ -1,6 +1,6 @@
 # Xiapan Portable AI USB · Quick Start
 
-For version 0.5.4. **Portable AI, a wallet that travels with you, cached programs, offline diagnostics, and a computer maintenance toolkit.**
+For version 0.5.6. **Portable AI, a wallet that travels with you, cached programs, offline diagnostics, and a computer maintenance toolkit.**
 
 ## Copy to a USB drive
 

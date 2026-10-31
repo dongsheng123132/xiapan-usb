@@ -4,7 +4,7 @@
 
 ## 当前产品与启动链路
 
-产品范围以 [PRODUCT.md](PRODUCT.md) 为准。`0.5.4-portable-preview` 保留自建轻量首页，并在用户点击“完整 PicoClaw”时打开固定版官方工作台；两个界面接入同一受管理的持久 Gateway。
+产品范围以 [PRODUCT.md](PRODUCT.md) 为准。`0.5.6-portable-preview` 保留自建轻量首页，并在用户点击“完整 PicoClaw”时打开固定版官方工作台；两个界面接入同一受管理的持久 Gateway。
 
 本仓对应**虾盘随身 AI Lite / U-PicoClaw**，主体验为“换台电脑，接着干”：配置、会话、记忆、技能与盘内工作接续。Pro 是品牌家族中既有的 U-Claw（OpenClaw 便携版），独立维护与发行；不要把 Pro 实现塞进 Lite，也不要将它描述成 Lite 的未完成开关。产品场景、钱包与性能口径、已实现/待验收/待开发划分统一见 [产品定位](PRODUCT.md#1-产品定位) 及该文的下一步规格。
 
@@ -70,7 +70,7 @@ git push -u origin codex/macos-portable
 ```powershell
 python scripts/build-picoclaw-pinned.py
 .\scripts\build.ps1
-python scripts/package-portable.py --resources "D:\已验证工具资源" --output "D:\发盘\U-PicoClaw-0.5.4-portable-preview"
+python scripts/package-portable.py --resources "D:\已验证工具资源" --output "D:\发盘\U-PicoClaw-0.5.6-portable-preview"
 ```
 
 1. 固定上游构建脚本校验源码归档，安装锁定前端依赖，应用禁用自升级与 Windows launcher 进程检测的发行补丁，构建核心及 launcher 并更新同一平台清单。不在客户 U 盘执行此脚本，不改为下载 latest/nightly。

@@ -150,7 +150,11 @@ func TestStopVerifiedPicoOrphanAlreadyGone(t *testing.T) {
 
 func TestPicoProcessImagePathSelf(t *testing.T) {
 	path, ok := picoProcessImagePath(os.Getpid())
-	if !ok || path == "" {
+	if !ok {
+		// 没有 /proc 的平台（macOS）按设计降级为人工指引，见 gateway_orphan_unix.go 注释。
+		t.Skip("platform has no /proc: orphan image path degrades by design")
+	}
+	if path == "" {
 		t.Fatalf("self image path unavailable: %q", path)
 	}
 }

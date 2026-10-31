@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -127,7 +128,12 @@ func TestDestructiveRequestOnlyProducesPlan(t *testing.T) {
 		t.Fatal(r.Error)
 	}
 	p := r.Data.(Plan)
-	if p.Mode != "guide" || p.Action != "resources.scan" {
+	// 引导动作按宿主平台取（对照 platform_guidance_test.go）：macOS 走工具目录，Windows 走资源扫描。
+	wantAction := "resources.scan"
+	if runtime.GOOS == "darwin" {
+		wantAction = "tools.catalog"
+	}
+	if p.Mode != "guide" || p.Action != wantAction {
 		t.Fatalf("unexpected action %v", p)
 	}
 	entries, _ := os.ReadDir(root)

@@ -15,3 +15,7 @@
 *.iso
 .DS_Store
 __pycache__/
+
+# 本地编译产物与本机资料归档（不进仓库）
+/xiapan-maintenance
+/资料归档-windows/
