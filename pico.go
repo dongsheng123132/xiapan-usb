@@ -231,7 +231,7 @@ func picoConfigForModel(workspace string, selection ModelSettings) map[string]an
 	return cfg
 }
 func picoConversation(ctx context.Context, root string, session *ChatSession, message, language string) (string, error) {
-	g, err := ensurePicoGateway(ctx, root)
+	g, err := ensurePicoGateway(ctx, root, false)
 	if err != nil {
 		return "", err
 	}

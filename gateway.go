@@ -103,7 +103,7 @@ func picoGatewayInspect(root string) (any, error) {
 	return data, nil
 }
 func picoGatewayStart(ctx context.Context, root string) (any, error) {
-	if _, err := ensurePicoGateway(ctx, root); err != nil {
+	if _, err := ensurePicoGateway(ctx, root, false); err != nil {
 		return nil, err
 	}
 	return picoGatewayInspect(root)
@@ -149,7 +149,7 @@ func syncOwnedPicoCredentials(ctx context.Context, root string) error {
 	if key == "" {
 		return nil
 	}
-	if _, err = ensurePicoGateway(ctx, root); err != nil {
+	if _, err = ensurePicoGateway(ctx, root, false); err != nil {
 		return err
 	}
 	if hadUI {
@@ -226,7 +226,54 @@ func newPicoToken() (string, error) {
 	}
 	return hex.EncodeToString(b), nil
 }
-func ensurePicoGateway(ctx context.Context, root string) (*picoGatewayRuntime, error) {
+
+// resolvePicoCredential returns the credential for the current portable
+// selection. With allowEmptyCredential a missing wallet becomes an empty key
+// instead of an error, so the official UI can open in limited mode. Corrupt
+// settings and non-wallet errors still fail.
+func resolvePicoCredential(root string, allowEmptyCredential bool) (string, error) {
+	selection, err := selectedModel(root)
+	if err != nil {
+		return "", err
+	}
+	key := selection.APIKey
+	if selection.Source == "cloud" {
+		key, err = walletKey(root)
+		if err != nil {
+			if allowEmptyCredential {
+				return "", nil
+			}
+			return "", err
+		}
+	}
+	if key == "" && !allowEmptyCredential {
+		return "", errors.New("请先启用设备钱包或填写自带 API Key")
+	}
+	return key, nil
+}
+
+// ensureMinimalPicoConfig writes a valid minimal native configuration when none
+// exists yet, so the official UI opens without a credential. It never rewrites
+// .security.yml, so an existing key on the drive is preserved.
+func ensureMinimalPicoConfig(root string) error {
+	lock := rootLock(&picoConfigLocks, root)
+	lock.Lock()
+	defer lock.Unlock()
+	workspace, err := preparePicoWorkspace(root)
+	if err != nil {
+		return err
+	}
+	cfg, err := readPicoMap(root, "config.json", false)
+	if err != nil {
+		return err
+	}
+	if len(cfg) != 0 {
+		return nil
+	}
+	return writePicoMap(root, "config.json", picoConfig(workspace), false)
+}
+
+func ensurePicoGateway(ctx context.Context, root string, allowEmptyCredential bool) (*picoGatewayRuntime, error) {
 	g := picoRuntime(root)
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -296,21 +343,18 @@ func ensurePicoGateway(ctx context.Context, root string) (*picoGatewayRuntime, e
 	if err != nil {
 		return nil, err
 	}
-	selection, err := selectedModel(root)
+	key, err := resolvePicoCredential(root, allowEmptyCredential)
 	if err != nil {
 		return nil, err
 	}
-	key := selection.APIKey
-	if selection.Source == "cloud" {
-		key, err = walletKey(root)
-		if err != nil {
+	if key == "" {
+		// Limited mode for pico.ui.open without a wallet/key: materialize a
+		// minimal native config so the official UI opens, but never overwrite
+		// an existing credential on the drive.
+		if err = ensureMinimalPicoConfig(root); err != nil {
 			return nil, err
 		}
-	}
-	if key == "" {
-		return nil, errors.New("请先启用设备钱包或填写自带 API Key")
-	}
-	if err = applyPicoCredential(root, key); err != nil {
+	} else if err = applyPicoCredential(root, key); err != nil {
 		return nil, err
 	}
 	port, err := freePicoPort()
@@ -440,7 +484,7 @@ func waitPicoHTTP(ctx context.Context, address string, p *picoManagedProcess) er
 	}
 }
 func picoWebUIStart(ctx context.Context, root string) (any, error) {
-	g, err := ensurePicoGateway(ctx, root)
+	g, err := ensurePicoGateway(ctx, root, true)
 	if err != nil {
 		return nil, err
 	}
@@ -476,7 +520,11 @@ func picoWebUIStart(ctx context.Context, root string) (any, error) {
 		}
 	}
 	g.statusSnapshotLocked()
-	return map[string]any{"url": g.launcherURL, "opened": false, "note": "首次进入官方界面请设置本地面板密码；API Key、技能和原生会话保存在本盘。"}, nil
+	note := "首次进入官方界面请设置本地面板密码；API Key、技能和原生会话保存在本盘。"
+	if key, keyErr := resolvePicoCredential(root, true); keyErr == nil && key == "" {
+		note = "尚未配置模型：完整界面已打开，AI 对话需先启用钱包或填写 API Key"
+	}
+	return map[string]any{"url": g.launcherURL, "opened": false, "note": note}, nil
 }
 
 type picoWireMessage struct {

@@ -57,6 +57,78 @@ func TestPicoCredentialPreservesNativeConfiguration(t *testing.T) {
 	}
 }
 
+func TestPicoUIOpenWithoutWalletUsesLimitedMode(t *testing.T) {
+	root := t.TempDir()
+
+	// Fresh drive: no wallet, no API key. The strict path used by pico.start
+	// and chat.send must keep rejecting the empty credential.
+	if _, err := resolvePicoCredential(root, false); err == nil {
+		t.Fatal("strict credential resolution accepted an empty wallet")
+	}
+	// The official-UI path resolves to limited mode instead of failing early.
+	key, err := resolvePicoCredential(root, true)
+	if err != nil || key != "" {
+		t.Fatalf("limited credential resolution = %q, %v; want empty key, no error", key, err)
+	}
+
+	// Limited mode materializes a minimal config without advertising a model
+	// and without writing any native secret file.
+	if err := ensureMinimalPicoConfig(root); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := readPicoMap(root, "config.json", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if picoMap(picoMap(cfg, "agents"), "defaults")["model_name"] != picoManagedModel {
+		t.Fatalf("minimal config missing managed model: %#v", cfg)
+	}
+	if _, ok := cfg["model_list"]; ok {
+		t.Fatal("limited config advertised a model without a credential")
+	}
+	if _, err := os.Stat(filepath.Join(root, "data", "pico", ".security.yml")); !os.IsNotExist(err) {
+		t.Fatal("limited config touched native secrets")
+	}
+
+	// A saved custom key still wins: credentials are never treated as empty.
+	saved := ModelSettings{Revision: "fixture", Source: "custom", Model: "fixture-model", BaseURL: "https://example.org/v1", APIKey: "{{SECRET_k4jkq8zh}}"}
+	b, _ := json.Marshal(saved)
+	if err := replaceLocalFile(root, []string{"data", "settings", "model.json"}, b); err != nil {
+		t.Fatal(err)
+	}
+	key, err = resolvePicoCredential(root, true)
+	if err != nil || key != saved.APIKey {
+		t.Fatalf("credentialed resolution = %q, %v; want saved key", key, err)
+	}
+}
+
+func TestLimitedModePreservesExistingNativeSecret(t *testing.T) {
+	root := t.TempDir()
+	// Simulate a drive whose native secret already exists while config.json is
+	// missing. Limited mode must never rewrite an existing credential.
+	if err := writePicoMap(root, ".security.yml", map[string]any{
+		"model_list": map[string]any{
+			picoManagedModel + ":0": map[string]any{"api_keys": []string{"existing-key"}},
+		},
+	}, true); err != nil {
+		t.Fatal(err)
+	}
+	before, err := os.ReadFile(filepath.Join(root, "data", "pico", ".security.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := ensureMinimalPicoConfig(root); err != nil {
+		t.Fatal(err)
+	}
+	after, err := os.ReadFile(filepath.Join(root, "data", "pico", ".security.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(before) != string(after) {
+		t.Fatal("limited mode overwrote an existing native secret")
+	}
+}
+
 func TestPinnedGatewayIntegration(t *testing.T) {
 	if os.Getenv("XIAPAN_PICO_INTEGRATION") != "1" {
 		t.Skip("set XIAPAN_PICO_INTEGRATION=1 with pinned runtime prepared")
