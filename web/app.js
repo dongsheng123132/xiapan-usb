@@ -38,7 +38,7 @@ function render(){if(!session)return;if(session.messages.length){$('task-title')
  }
  const trace=$('trace-content');trace.replaceChildren();for(const m of traces){const c=el('details',undefined,'trace-item');c.append(el('summary',m.action),el('pre',JSON.stringify(m.data,null,2)));trace.append(c);}ui($('trace-count'),'{count} 项动作',{count:traces.length});box.lastElementChild?.scrollIntoView({block:'nearest'});
 }
-function setBusy(value,text='● 正在处理当前任务…'){busy=value;$('send').disabled=value;$('workspace-add').disabled=value;$('file-reference').disabled=value;$('new-chat').disabled=value;$('question').disabled=value;$('engine-select').disabled=value;$('busy-status').classList.toggle('hidden',!value);ui($('busy-status'),text);$('language-select').disabled=value;for(const b of document.querySelectorAll('.proposal-card button'))b.disabled=value;}
+function setBusy(value,text='● 正在处理当前任务…'){busy=value;$('send').disabled=value;$('workspace-add').disabled=value;$('file-reference').disabled=value;$('file-upload').disabled=value;$('new-chat').disabled=value;$('question').disabled=value;$('engine-select').disabled=value;$('busy-status').classList.toggle('hidden',!value);ui($('busy-status'),text);$('language-select').disabled=value;for(const b of document.querySelectorAll('.proposal-card button'))b.disabled=value;}
 function workspaceLabel(){const w=workspaces.find(w=>w.id===activeWorkspace);$('workspace-title').textContent=w?w.title:'';}
 async function listSessions(){
  const rows=await run('chat.list');sessionRows=rows;const c=$('session-list');c.replaceChildren();
@@ -57,6 +57,32 @@ async function workspacePicker(){
 }
 async function referenceFiles(folderPath=''){
  if(!activeWorkspace){toast('请先从左侧选择一个项目');return;}const selectedWorkspace=activeWorkspace,c=dialog('引用文件','选择文件后，将路径加入输入框，供 AI 按任务读取。文件内容不会在此上传。'),status=el('div');c.append(status);status.append(el('p','正在读取文件…'));try{const d=await run('workspace.files',{workspace_id:selectedWorkspace,path:folderPath});if(!status.isConnected)return;status.replaceChildren();if(folderPath)status.append(button('返回项目根目录',null,()=>referenceFiles(''),'secondary'));for(const file of d.files||[]){const row=button('',null,()=>{const context=t('引用文件：{path}',{path:file.path});const q=$('question');if(q.value.length+context.length+1>q.maxLength){toast('输入内容过长，请先精简后再引用');return;}q.value+=(q.value?'\n':'')+context;$('dialog').close();q.focus();},'directory-row');row.append(el('span',file.directory?'▱':'▤',undefined,true),el('span',file.name,undefined,true));if(file.directory)row.onclick=()=>referenceFiles(file.path).catch(fail);status.append(row);}if(!status.childElementCount)status.append(el('p','项目内还没有可引用的文件。'));}catch(e){status.replaceChildren(el('p',e.message,undefined,true));}
+}
+// --- 真实上传：本地文件与剪贴板图片都落到当前项目目录 ---
+function pasteImageName(type){const d=new Date(),pad=n=>String(n).padStart(2,'0'),ext={'image/jpeg':'jpg','image/gif':'gif','image/webp':'webp','image/svg+xml':'svg'}[type]||'png';return `paste-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.${ext}`;}
+function insertQuestionContext(context){const q=$('question');if(q.value.length+context.length+1>q.maxLength){toast('输入内容过长，请先精简后再插入');return false;}q.value+=(q.value?'\n':'')+context;q.focus();return true;}
+async function uploadFileToProject(file,name){
+  if(!activeWorkspace)throw Error('请先选择项目');
+  const form=new FormData();
+  form.append('workspace_id',activeWorkspace);form.append('file',file,name||file.name);
+  const resp=await fetch('/api/upload',{method:'POST',headers:{'X-Xiapan-Token':token},body:form});
+  let result=null;try{result=await resp.json();}catch{}
+  if(!resp.ok||!result||!result.path)throw Error(t((result&&result.error)||'上传未完成'));
+  return result;
+}
+async function uploadSelectedFile(file){
+  if(!activeWorkspace){toast('请先选择项目');return;}
+  if(busy||!file)return;
+  setBusy(true,'● 正在上传文件…');
+  try{const saved=await uploadFileToProject(file);insertQuestionContext(t('上传文件：{path}',{path:saved.path}));toast(msg('已上传：{name}',{name:saved.name}));}
+  catch(e){fail(e);}finally{setBusy(false);}
+}
+async function uploadPastedImage(blob){
+  if(!activeWorkspace){toast('请先选择项目');return;}
+  if(busy||!blob)return;
+  setBusy(true,'● 正在上传图片…');
+  try{const saved=await uploadFileToProject(blob,pasteImageName(blob.type));insertQuestionContext(t('粘贴图片：{path}',{path:saved.path}));toast(msg('已上传：{name}',{name:saved.name}));}
+  catch(e){fail(e);}finally{setBusy(false);}
 }
 async function send(message){if(busy||!message.trim())return;if(!session)await newChat();if(busy)return;showView('chat');setBusy(true,'● 正在检测与回答…');
  const progressTimer=setInterval(async()=>{try{const p=await run('chat.progress',{session_id:session.id});if(p){const saved=session;session=p;render();session=saved;}}catch{}},800);
@@ -132,6 +158,18 @@ for(const [cmd,description] of commands){const b=el('button',undefined,'palette-
 document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.view)showView(b.dataset.view);if(b.dataset.prompt){showView('chat');$('maintenance-menu').open=false;$('question').value=t(b.dataset.prompt);$('question').focus();}if(b.dataset.command)send(b.dataset.command).catch(fail);});
 $('chat-form').onsubmit=e=>{e.preventDefault();send($('question').value).catch(fail);};$('question').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();send($('question').value).catch(fail);}};
 $('workspace-add').onclick=()=>workspacePicker().catch(fail);$('file-reference').onclick=()=>referenceFiles().catch(fail);
+$('file-upload').onclick=()=>{if(busy)return;if(!activeWorkspace){toast('请先选择项目');return;}$('file-upload-input').click();};
+$('file-upload-input').onchange=event=>{const file=event.target.files&&event.target.files[0];event.target.value='';if(file)uploadSelectedFile(file).catch(fail);};
+$('question').addEventListener('paste',event=>{
+  if(busy)return;
+  const data=event.clipboardData;if(!data||!data.items)return;
+  const item=Array.from(data.items).find(entry=>entry.kind==='file'&&/^image\//.test(entry.type||''));
+  if(!item)return;
+  event.preventDefault();
+  const blob=item.getAsFile();
+  if(!blob){toast('无法读取剪贴板图片，请改用「＋ 上传文件」');return;}
+  uploadPastedImage(blob).catch(fail);
+});
 $('engine-select').onchange=engineNote;$('model-settings').onclick=()=>modelSettingsView().catch(fail);$('history-open').onclick=()=>{const open=document.body.classList.toggle('history-open');$('history-open').setAttribute('aria-expanded',String(open));syncSidebarInert();};$('sidebar-toggle').onclick=()=>{setSidebarCollapsed($('sidebar-toggle').getAttribute('aria-expanded')!=='false');};window.addEventListener('resize',applySidebar);window.addEventListener('resize',syncSidebarInert);$('new-chat').onclick=()=>newChat().catch(fail);$('expert-toggle').onclick=()=>{expert=!expert;$('trace-panel').classList.toggle('hidden',!expert);ui($('expert-toggle'),expert?'关闭专业模式':'专业模式');};$('wallet-open').onclick=()=>walletView().catch(fail);$('wallet-top-open').onclick=()=>walletView().catch(fail);$('offline-open').onclick=()=>offline().catch(fail);$('pico-open').onclick=openPicoUI;$('cache-open').onclick=()=>runtimeView().catch(fail);$('dialog-close').onclick=()=>{$('dialog').close();$('dialog-content').replaceChildren();};$('dialog').addEventListener('close',()=>{$('dialog-content').replaceChildren();});$('palette-open').onclick=()=>$('palette').showModal();$('palette-close').onclick=()=>$('palette').close();
 $('reports-open').onclick=async()=>{try{const d=await run('reports.list'),c=dialog('本盘维护记录',msg('共 {count} 份报告。',{count:d.length}));for(const r of d){const a=el('article',undefined,'action-card');a.append(el('h3',new Date(r.created_at).toLocaleString(I18n.language)));detail(a,r);c.append(a);}}catch(e){fail(e);}};
 $('skills-open').onclick=async()=>{try{const r=await (await fetch('/api/skills')).json();if(!r.ok)throw Error(r.error);const c=dialog('维护技能','技能规定维护步骤，执行能力由真实工具提供。');for(const s of r.data){const d=el('details',undefined,'skill-card');d.append(el('summary',s.id),el('pre',s.content));c.append(d);}}catch(e){fail(e);}};

@@ -376,6 +376,7 @@ func newServer(root, base string) (*http.Server, error) {
 		defer cancel()
 		writeJSON(w, runAction(ctx, root, req.Action, req.Input))
 	})
+	mux.HandleFunc("/api/upload", uploadHandler(root, token))
 	mux.HandleFunc("/api/skills", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "method", 405)
@@ -434,7 +435,7 @@ func newServer(root, base string) (*http.Server, error) {
 		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
 		mux.ServeHTTP(w, r)
 	})
-	server = &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 31 * time.Minute, IdleTimeout: 30 * time.Second}
+	server = &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Minute, WriteTimeout: 31 * time.Minute, IdleTimeout: 30 * time.Second}
 	return server, nil
 }
 
