@@ -69,6 +69,10 @@ var actions = []Action{
 	{"chat.progress", "处理进度", "读取当前对话的实际动作结果", false},
 	{"chat.send", "AI 维护对话", "PicoClaw 随身 AI，或无需模型的维护向导", true},
 	{"chat.confirm", "确认维护操作", "执行此对话中明确展示的操作", true},
+	{"workspace.list", "工作区项目", "读取盘内已注册的工作区项目", false},
+	{"workspace.browse", "浏览工作区", "只读浏览盘内工作区目录，不越界", false},
+	{"workspace.create", "加入工作区", "选择或创建盘内目录并注册为项目", true},
+	{"workspace.files", "项目文件", "只读列出项目目录内的文件与子目录", false},
 	{"processes.inspect", "查看进程", "只读获取进程名称与内存，不读取命令行", false},
 	{"network.diagnose", "网络诊断", "检查网卡、DNS 与云端连通性，不改配置", false},
 	{"drivers.inspect", "网络设备与驱动", "离线读取网卡硬件 ID、驱动与故障码，查看盘内驱动", false},
@@ -117,6 +121,14 @@ func runAction(ctx context.Context, root, id string, input map[string]any) Resul
 		data, err = cloudModels(ctx, root)
 	case "chat.start", "chat.list", "chat.read", "chat.progress", "chat.send", "chat.confirm":
 		data, err = chatAction(ctx, root, id, input)
+	case "workspace.list":
+		data, err = workspaceList(root)
+	case "workspace.browse":
+		data, err = workspaceBrowse(root, str(input, "path"))
+	case "workspace.create":
+		data, err = workspaceCreate(root, str(input, "path"))
+	case "workspace.files":
+		data, err = workspaceFiles(root, str(input, "workspace_id"), str(input, "path"))
 	case "processes.inspect":
 		data, err = inspectProcesses(ctx, root)
 	case "network.diagnose":

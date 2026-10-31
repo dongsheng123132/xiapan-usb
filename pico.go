@@ -246,6 +246,15 @@ func picoConversation(ctx context.Context, root string, session *ChatSession, me
 	if language == "en" {
 		prompt = "You are a portable AI work assistant. Use native tools as appropriate. For maintenance prefer mcp_xiapan_maintenance_action with conversation_id " + binding + ". A confirmation request is not an executed action. Never read or expose API keys. Reply in concise English.\nUser: " + message
 	}
+	if session.WorkspaceID != "" {
+		if realPath, err := workspaceProjectRealPath(root, session.WorkspaceID); err == nil {
+			if language == "en" {
+				prompt += "\nWorking-directory context only (not permission isolation; actual file access stays governed by the Gateway and local tools): " + realPath
+			} else {
+				prompt += "\n工作目录上下文（仅是定位文件用，不是权限隔离；实际文件访问仍受 Gateway 与本机工具限制）：" + realPath
+			}
+		}
+	}
 	for _, m := range session.Messages {
 		if m.Role == "action" {
 			b, _ := json.Marshal(compactEvidence(m.Data))

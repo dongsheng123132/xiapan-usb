@@ -34,6 +34,7 @@ type ChatSession struct {
 	Messages    []ChatMessage `json:"messages"`
 	Pending     []Proposal    `json:"pending"`
 	Engine      string        `json:"engine"`
+	WorkspaceID string        `json:"workspace_id,omitempty"`
 	progressKey string
 }
 
@@ -93,12 +94,19 @@ func chatAction(ctx context.Context, root, id string, input map[string]any) (any
 	}
 	if id == "chat.start" {
 		s := ChatSession{ID: uniqueID(), Title: "新对话", Messages: []ChatMessage{}, Pending: []Proposal{}, Engine: "pico"}
+		if wsID := strings.TrimSpace(str(input, "workspace_id")); wsID != "" {
+			if _, err := workspaceProjectRealPath(root, wsID); err != nil {
+				return nil, errors.New("所选工作区项目无效，请重新选择")
+			}
+			s.WorkspaceID = wsID
+		}
 		if err := saveChat(root, &s); err != nil {
 			return nil, err
 		}
 		return s, nil
 	}
 	if id == "chat.list" {
+		wsFilter := strings.TrimSpace(str(input, "workspace_id"))
 		dir, err := writablePath(root, "data", "chat")
 		if err != nil {
 			return nil, err
@@ -118,7 +126,10 @@ func chatAction(ctx context.Context, root, id string, input map[string]any) (any
 			}
 			s, err := loadChat(root, strings.TrimSuffix(f.Name(), ".json"))
 			if err == nil {
-				rows = append(rows, map[string]any{"id": s.ID, "title": s.Title, "updated_at": s.Updated, "version": s.Version})
+				if wsFilter != "" && s.WorkspaceID != wsFilter {
+					continue
+				}
+				rows = append(rows, map[string]any{"id": s.ID, "title": s.Title, "updated_at": s.Updated, "version": s.Version, "workspace_id": s.WorkspaceID})
 			}
 		}
 		return rows, nil
