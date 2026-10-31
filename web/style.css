@@ -537,8 +537,8 @@ body.sidebar-collapsed .workspace-heading,body.sidebar-collapsed .session-list,b
 @media(max-width:780px){
  .sidebar{width:min(300px,86vw);padding:18px 12px;z-index:20}
  body.sidebar-collapsed .workspace-heading{display:flex}body.sidebar-collapsed .session-list{display:block}body.sidebar-collapsed .foot-settings{display:flex}
- .topbar{height:56px;min-height:56px;padding:8px 10px;position:relative;z-index:21}
- .top-actions{gap:5px;justify-content:space-between}
+ .topbar{height:auto;min-height:56px;padding:8px 10px;position:relative;z-index:21;flex-wrap:wrap;row-gap:6px}
+ .top-actions{gap:5px;justify-content:flex-end;flex-wrap:wrap;row-gap:6px}
  #history-open{display:inline-flex;font-size:12px;padding:6px}
  #language-select{max-width:82px;font-size:11px;padding:5px}
  #pico-open{font-size:11px;padding:5px 7px}
