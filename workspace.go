@@ -252,6 +252,11 @@ func workspaceBrowse(root, path string) (any, error) {
 		if e.Type()&os.ModeSymlink != 0 || !e.IsDir() {
 			continue
 		}
+		// Hide dot-directories from the picker; they are noise for a user
+		// choosing a project folder (the "Show hidden" surface is out of scope).
+		if strings.HasPrefix(e.Name(), ".") {
+			continue
+		}
 		dirs = append(dirs, map[string]any{"name": e.Name(), "path": filepath.Join(dir, e.Name())})
 	}
 	sort.Slice(dirs, func(i, j int) bool {
