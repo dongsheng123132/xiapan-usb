@@ -238,12 +238,17 @@ func resolvePicoCredential(root string, allowEmptyCredential bool) (string, erro
 	}
 	key := selection.APIKey
 	if selection.Source == "cloud" {
-		key, err = walletKey(root)
-		if err != nil {
-			if allowEmptyCredential {
-				return "", nil
+		if allowEmptyCredential {
+			state, loadErr := loadWallet(root)
+			if loadErr != nil {
+				return "", loadErr
 			}
-			return "", err
+			key = state.APIKey
+		} else {
+			key, err = walletKey(root)
+			if err != nil {
+				return "", err
+			}
 		}
 	}
 	if key == "" && !allowEmptyCredential {
@@ -274,6 +279,11 @@ func ensureMinimalPicoConfig(root string) error {
 }
 
 func ensurePicoGateway(ctx context.Context, root string, allowEmptyCredential bool) (*picoGatewayRuntime, error) {
+	// Validate before reusing a gateway opened in limited mode as well.
+	// A running UI must not bypass the chat/start credential requirement.
+	if _, err := resolvePicoCredential(root, allowEmptyCredential); err != nil {
+		return nil, err
+	}
 	g := picoRuntime(root)
 	g.mu.Lock()
 	defer g.mu.Unlock()
