@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -179,9 +180,57 @@ func workspaceList(root string) (any, error) {
 	return rows, nil
 }
 
+// workspaceRoots returns the top-level locations the user can open as a
+// project root: the home directory plus every mounted drive or volume, so the
+// picker can reach C:/D:/E: on Windows or /Volumes/* on macOS/Linux without
+// climbing a single parent chain.
+func workspaceRoots() (any, error) {
+	type rootEntry struct{ Name, Path string }
+	roots := []rootEntry{}
+	seen := map[string]bool{}
+	add := func(name, path string) {
+		real, err := filepath.EvalSymlinks(path)
+		if err != nil || seen[real] {
+			return
+		}
+		seen[real] = true
+		roots = append(roots, rootEntry{Name: name, Path: real})
+	}
+	if home, err := os.UserHomeDir(); err == nil {
+		add("主目录", home)
+	}
+	if runtime.GOOS == "windows" {
+		for c := 'A'; c <= 'Z'; c++ {
+			p := string(c) + `:\`
+			if fi, err := os.Stat(p); err == nil && fi.IsDir() {
+				add(string(c)+":", p)
+			}
+		}
+	} else {
+		add("根目录", "/")
+		for _, base := range []string{"/Volumes", "/media", "/mnt"} {
+			entries, err := os.ReadDir(base)
+			if err != nil {
+				continue
+			}
+			for _, e := range entries {
+				if e.IsDir() {
+					add(e.Name(), filepath.Join(base, e.Name()))
+				}
+			}
+		}
+	}
+	rows := make([]any, 0, len(roots))
+	for _, r := range roots {
+		rows = append(rows, map[string]any{"name": r.Name, "path": r.Path})
+	}
+	return map[string]any{"roots": rows}, nil
+}
+
 // workspaceBrowse lists the subdirectories of an absolute host directory, one
-// level deep. An empty path starts from the user's home directory. Only real,
-// non-link directories are returned; each child path is absolute.
+// level deep. Only real, non-link directories are returned; each child path is
+// absolute. The caller starts from workspaceRoots and never needs an empty
+// path here; an empty path falls back to the user's home directory.
 func workspaceBrowse(root, path string) (any, error) {
 	if strings.TrimSpace(path) == "" {
 		home, err := os.UserHomeDir()
