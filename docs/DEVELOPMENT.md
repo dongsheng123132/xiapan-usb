@@ -1,6 +1,6 @@
 # 同仓库、多平台开发
 
-源码唯一入口：https://github.com/dongsheng123132/xiapan-usb ，本次便携产品维护分支为 `codex/u-picoclaw-portable`。远端 `main` 已转向另一条公司 IT 排障产品线；本分支保留钱包与传统便携工具，不自动覆盖 `main`。不要为 Mac/Linux 另建一份互不同步的项目，也不要直接在出售的 U 盘上开发。
+源码唯一入口：https://github.com/dongsheng123132/xiapan-usb 。2026-10-31 已将随身 AI 便携产品主线收口到 `main`，网管版旧说明保存在 `docs/archive/`。从 `main` 新建功能分支；不要为 Mac/Linux 另建一份互不同步的项目，也不要直接在出售的 U 盘上开发。
 
 ## 当前产品与启动链路
 
@@ -16,7 +16,7 @@
 ## Mac / Linux
 
 ```sh
-git clone --branch codex/u-picoclaw-portable https://github.com/dongsheng123132/xiapan-usb.git
+git clone --branch main https://github.com/dongsheng123132/xiapan-usb.git
 cd xiapan-usb
 git switch -c codex/macos-portable
 go test ./...
@@ -28,7 +28,7 @@ git commit -m "feat: adapt macOS portable runtime"
 git push -u origin codex/macos-portable
 ```
 
-到 GitHub 发起 PR，目标选择 `codex/u-picoclaw-portable`，检查通过后合入便携产品分支。另一台电脑先保存自己的修改，再 `git pull --rebase`。Linux 分支可使用 `codex/linux-portable`，但 Linux 不属于本次三平台成品配方。不要提交 `data/`、工具二进制或 API Key。
+到 GitHub 发起 PR，目标选择 `main`，检查通过后合入主线。另一台电脑先保存自己的修改，再 `git pull --rebase`。Linux 分支可使用 `codex/linux-portable`，但 Linux 不属于本次三平台成品配方。不要提交 `data/`、工具二进制或 API Key。
 
 ## 实现入口
 
