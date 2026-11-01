@@ -8,7 +8,7 @@
 
 **随身 AI、钱包随盘、程序缓存、断网应急、电脑维护工具包。**
 
-![Preview](https://img.shields.io/badge/version-0.5.7--portable--preview-8b6b33)
+![Preview](https://img.shields.io/badge/version-0.5.8--portable--preview-8b6b33)
 ![Go](https://img.shields.io/badge/Go-1.24%2B-367a8d)
 ![License](https://img.shields.io/badge/license-MIT-527c46)
 ![AI optional](https://img.shields.io/badge/AI-optional-4c7770)
@@ -110,7 +110,7 @@ PicoClaw 工具功能按当前系统用户权限运行。维护动作由界面�
 ```powershell
 python scripts/build-picoclaw-pinned.py
 .\scripts\build.ps1
-python scripts/package-portable.py --resources "D:\已验证工具资源" --output "D:\发盘\U-PicoClaw-0.5.7-portable-preview"
+python scripts/package-portable.py --resources "D:\已验证工具资源" --output "D:\发盘\U-PicoClaw-0.5.8-portable-preview"
 ```
 
 资源目录需有清单要求的工具文件，输出必须是尚不存在的新目录。脚本校验资源、创建空白 data 并生成成品校验清单，不复制来源盘的个人数据。新母盘只使用这条配方，历史 package-genie 不再作为本产品制盘入口。准备要求与验收见 [开发指南](docs/DEVELOPMENT.md)。
