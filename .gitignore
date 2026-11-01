@@ -25,3 +25,15 @@
 /tmp/
 
 /发盘/虾盘随身AI盘-0.5.4/
+
+# snapshot-2026-11-01: exclude release artifacts / stage dirs / large build outputs
+*.zip
+*.log
+/gosim-2026/
+/_lite-stage-*/
+/观猹提交物料-*/
+/发盘/resources-*/
+/发盘/虾盘随身AI盘-0.5.5/
+/发盘/虾盘随身AI盘-0.5.5*.zip
+/发盘/_single-zip-progress.log
+/发盘/打包-0.5.5.log
