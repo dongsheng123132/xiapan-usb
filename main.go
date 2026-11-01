@@ -73,6 +73,7 @@ var actions = []Action{
 	{"workspace.roots", "这台电脑", "列出本机磁盘与卷，供选择项目目录", false},
 	{"workspace.browse", "浏览目录", "只读浏览本机目录，供选择项目", false},
 	{"workspace.create", "加入工作区", "选择或创建本机目录并注册为项目", true},
+	{"workspace.activate", "设为当前项目", "把项目目录写入 PicoClaw 工作指南，供官方界面使用", true},
 	{"workspace.files", "项目文件", "只读列出项目目录内的文件与子目录", false},
 	{"processes.inspect", "查看进程", "只读获取进程名称与内存，不读取命令行", false},
 	{"network.diagnose", "网络诊断", "检查网卡、DNS 与云端连通性，不改配置", false},
@@ -130,6 +131,8 @@ func runAction(ctx context.Context, root, id string, input map[string]any) Resul
 		data, err = workspaceBrowse(root, str(input, "path"))
 	case "workspace.create":
 		data, err = workspaceCreate(root, str(input, "path"))
+	case "workspace.activate":
+		data, err = workspaceActivate(root, str(input, "workspace_id"))
 	case "workspace.files":
 		data, err = workspaceFiles(root, str(input, "workspace_id"), str(input, "path"))
 	case "processes.inspect":

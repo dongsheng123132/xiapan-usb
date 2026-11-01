@@ -283,6 +283,9 @@ func workspaceCreate(root, path string) (any, error) {
 		if _, err := workspaceProjectRealPath(root, existing.ID); err != nil {
 			return nil, errors.New("该项目路径已失效，请先移除后重新加入")
 		}
+		if err = writeProjectGuide(root, dir); err != nil {
+			return nil, err
+		}
 		return map[string]any{"id": existing.ID, "title": filepath.Base(dir), "path": dir}, nil
 	}
 	proj := WorkspaceProject{
@@ -294,7 +297,57 @@ func workspaceCreate(root, path string) (any, error) {
 	if err = saveWorkspaces(root, list); err != nil {
 		return nil, err
 	}
+	if err = writeProjectGuide(root, dir); err != nil {
+		return nil, err
+	}
 	return map[string]any{"id": proj.ID, "title": proj.Title, "path": proj.Path}, nil
+}
+
+// workspaceActivate makes an existing project the current working directory by
+// writing its path into PicoClaw's workspace AGENTS.md, so the official PicoClaw
+// Web UI reads it and writes files there. It never changes the PicoClaw workspace
+// itself (skills/memory/sessions stay on the drive).
+func workspaceActivate(root, id string) (any, error) {
+	path, err := workspaceProjectRealPath(root, id)
+	if err != nil {
+		return nil, err
+	}
+	if err = writeProjectGuide(root, path); err != nil {
+		return nil, err
+	}
+	return map[string]any{"path": path, "title": filepath.Base(path)}, nil
+}
+
+const projectGuideStart = "<!-- XIA PAN PROJECT START -->"
+const projectGuideEnd = "<!-- XIA PAN PROJECT END -->"
+
+// writeProjectGuide records the chosen project folder in PicoClaw's workspace
+// AGENTS.md (the agent behaviour guide the official Web UI auto-loads), so the
+// agent treats that folder as the default place to read and write files. A marked
+// section is replaced in place so any other AGENTS.md content is preserved.
+func writeProjectGuide(root, projectPath string) error {
+	parts := []string{"data", "pico", "workspace", "AGENTS.md"}
+	p, err := writablePath(root, parts...)
+	if err != nil {
+		return err
+	}
+	body := ""
+	if b, readErr := os.ReadFile(p); readErr == nil {
+		body = string(b)
+	} else if !errors.Is(readErr, os.ErrNotExist) {
+		return readErr
+	}
+	start := strings.Index(body, projectGuideStart)
+	end := strings.Index(body, projectGuideEnd)
+	if start >= 0 && end > start {
+		body = body[:start] + body[end+len(projectGuideEnd):]
+	}
+	section := projectGuideStart + "\n\n## 当前项目目录\n\n用户选定的工作目录是：`" + projectPath + "`\n\n写文件、读文件、列目录、生成报告/PPT 等任务，默认都在这个目录里进行（用绝对路径访问）。这个目录和 PicoClaw 自身的 workspace 是两回事，不要往 PicoClaw workspace 里写项目产物。\n\n" + projectGuideEnd + "\n"
+	body = strings.TrimRight(body, "\n")
+	if body != "" {
+		body += "\n\n"
+	}
+	return replaceLocalFile(root, parts, []byte(body+section))
 }
 
 // workspaceFiles lists the files and subdirectories of a project directory, one

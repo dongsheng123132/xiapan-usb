@@ -408,3 +408,46 @@ func TestChatWorkspaceFilterAndLegacyCompatibility(t *testing.T) {
 		t.Fatal("accepted unregistered workspace_id")
 	}
 }
+
+func TestWriteProjectGuideIdempotent(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "data", "pico", "workspace"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	first := "/Users/example/first"
+	second := "/Users/example/second"
+
+	if err := writeProjectGuide(root, first); err != nil {
+		t.Fatal(err)
+	}
+	// Pre-existing unrelated content must survive the marked-section replacement.
+	guide := filepath.Join(root, "data", "pico", "workspace", "AGENTS.md")
+	if err := replaceLocalFile(root, []string{"data", "pico", "workspace", "AGENTS.md"}, []byte("# 我的规则\n保留这一行\n\n"+mustRead(t, guide))); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeProjectGuide(root, second); err != nil {
+		t.Fatal(err)
+	}
+	body := mustRead(t, guide)
+	if !strings.Contains(body, "我的规则") || !strings.Contains(body, "保留这一行") {
+		t.Fatalf("unrelated content was dropped:\n%s", body)
+	}
+	if !strings.Contains(body, second) {
+		t.Fatalf("second path missing:\n%s", body)
+	}
+	if strings.Contains(body, first) {
+		t.Fatalf("first path was not replaced:\n%s", body)
+	}
+	if strings.Count(body, projectGuideStart) != 1 {
+		t.Fatalf("section marker duplicated:\n%s", body)
+	}
+}
+
+func mustRead(t *testing.T, path string) string {
+	t.Helper()
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(b)
+}
