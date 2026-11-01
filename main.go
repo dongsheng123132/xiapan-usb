@@ -26,7 +26,7 @@ import (
 
 const version = "0.5.7-portable-preview"
 
-//go:embed web/* skills/*/SKILL.md catalog/*.json
+//go:embed web/* skills/*/SKILL.md skills/*/scripts/* catalog/*.json
 var assets embed.FS
 
 type Result struct {

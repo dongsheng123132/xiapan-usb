@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"gopkg.in/yaml.v3"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -192,23 +193,54 @@ func preparePicoWorkspace(root string) (string, error) {
 	if err = os.MkdirAll(workspace, 0700); err != nil {
 		return "", err
 	}
-	for _, name := range []string{"pc-triage", "pc-network-care", "pc-offline-install", "pc-data-rescue", "pc-boot-recovery"} {
-		parts := []string{"data", "pico", "workspace", "skills", name, "SKILL.md"}
-		p, e := writablePath(root, parts...)
-		if e != nil {
-			return "", e
-		}
-		if _, e = os.Stat(p); errors.Is(e, os.ErrNotExist) {
-			b, e := assets.ReadFile("skills/" + name + "/SKILL.md")
-			if e != nil {
-				return "", e
-			}
-			if _, e = newFileAtomic(root, parts, b); e != nil {
-				return "", e
-			}
+	for _, name := range []string{"pc-triage", "pc-network-care", "pc-offline-install", "pc-data-rescue", "pc-boot-recovery", "aigc"} {
+		if err = seedPicoSkill(root, name); err != nil {
+			return "", err
 		}
 	}
 	return workspace, nil
+}
+
+// seedPicoSkill writes one embedded skill into the drive workspace: its SKILL.md
+// and, for skills that ship scripts, the files under skills/<name>/scripts/.
+// It never overwrites a file the user already edited.
+func seedPicoSkill(root, name string) error {
+	mdParts := []string{"data", "pico", "workspace", "skills", name, "SKILL.md"}
+	mdPath, err := writablePath(root, mdParts...)
+	if err != nil {
+		return err
+	}
+	if _, err = os.Stat(mdPath); errors.Is(err, os.ErrNotExist) {
+		b, err := assets.ReadFile("skills/" + name + "/SKILL.md")
+		if err != nil {
+			return err
+		}
+		if _, err = newFileAtomic(root, mdParts, b); err != nil {
+			return err
+		}
+	}
+	scripts, err := fs.Glob(assets, "skills/"+name+"/scripts/*")
+	if err != nil {
+		return err
+	}
+	for _, sp := range scripts {
+		rel := strings.TrimPrefix(sp, "skills/"+name+"/")
+		parts := append([]string{"data", "pico", "workspace", "skills", name}, strings.Split(rel, "/")...)
+		p, err := writablePath(root, parts...)
+		if err != nil {
+			return err
+		}
+		if _, err = os.Stat(p); errors.Is(err, os.ErrNotExist) {
+			b, err := assets.ReadFile(sp)
+			if err != nil {
+				return err
+			}
+			if _, err = newFileAtomic(root, parts, b); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 func picoConfig(workspace string) map[string]any {
 	return map[string]any{"version": 3, "agents": map[string]any{"defaults": map[string]any{"workspace": workspace, "restrict_to_workspace": false, "model_name": picoManagedModel, "max_tool_iterations": 50, "max_tokens": 8192}}, "tools": map[string]any{"filter_sensitive_data": true, "filter_min_length": 1}}
@@ -242,9 +274,9 @@ func picoConversation(ctx context.Context, root string, session *ChatSession, me
 	g.bindings[binding] = session
 	g.bindMu.Unlock()
 	defer func() { g.bindMu.Lock(); delete(g.bindings, binding); g.bindMu.Unlock() }()
-	prompt := "你是随身 AI 工作助手。根据任务使用原生工具。电脑维护优先使用 mcp_xiapan_maintenance_action，conversation_id 为 " + binding + "；需要确认的动作只申请确认，不声称已执行。不要读取或输出 API Key。用简洁中文回答。\n用户：" + message
+	prompt := "你是随身 AI 工作助手。根据任务使用原生工具。电脑维护优先使用 mcp_xiapan_maintenance_action，conversation_id 为 " + binding + "；需要确认的动作只申请确认，不声称已执行。画图或作曲优先用 aigc 技能（scripts/gen-image.mjs 作图、gen-music.mjs 歌曲、gen-bgm.mjs 配乐），运行前先 node --version；没有 node 或能力不可用就明确告诉用户，不要编造或假装成功。不要读取或输出 API Key。用简洁中文回答。\n用户：" + message
 	if language == "en" {
-		prompt = "You are a portable AI work assistant. Use native tools as appropriate. For maintenance prefer mcp_xiapan_maintenance_action with conversation_id " + binding + ". A confirmation request is not an executed action. Never read or expose API keys. Reply in concise English.\nUser: " + message
+		prompt = "You are a portable AI work assistant. Use native tools as appropriate. For maintenance prefer mcp_xiapan_maintenance_action with conversation_id " + binding + ". A confirmation request is not an executed action. For image or music generation prefer the aigc skill (scripts/gen-image.mjs, gen-music.mjs, gen-bgm.mjs); run node --version first; if node or the capability is unavailable, say so clearly instead of pretending. Never read or expose API keys. Reply in concise English.\nUser: " + message
 	}
 	if session.WorkspaceID != "" {
 		if realPath, err := workspaceProjectRealPath(root, session.WorkspaceID); err == nil {
@@ -278,5 +310,11 @@ func picoEnvironment(root, engine string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return append(filtered, "PICOCLAW_HOME="+home, "PICOCLAW_CONFIG="+filepath.Join(home, "config.json"), "PICOCLAW_BINARY="+engine, "PICOCLAW_AGENTS_DEFAULTS_WORKSPACE="+filepath.Join(home, "workspace"), "PICOCLAW_GATEWAY_HOST=127.0.0.1"), nil
+	out := append(filtered, "PICOCLAW_HOME="+home, "PICOCLAW_CONFIG="+filepath.Join(home, "config.json"), "PICOCLAW_BINARY="+engine, "PICOCLAW_AGENTS_DEFAULTS_WORKSPACE="+filepath.Join(home, "workspace"), "PICOCLAW_GATEWAY_HOST=127.0.0.1")
+	// Expose the wallet key to the aigc skill scripts (gen-image/gen-music read
+	// XIAPAN_API_KEY) without ever embedding it in a prompt or config file.
+	if state, err := loadWallet(root); err == nil && state.APIKey != "" {
+		out = append(out, "XIAPAN_API_KEY="+state.APIKey)
+	}
+	return out, nil
 }
