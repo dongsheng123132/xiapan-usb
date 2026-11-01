@@ -3,12 +3,12 @@ const token=document.querySelector('meta[name="xiapan-token"]').content;
 const $=id=>document.getElementById(id),el=(tag,text,cls,raw=false)=>{const n=document.createElement(tag);if(text!==undefined){if(raw||tag==='pre'||tag==='code'){n.textContent=text;n.dataset.noI18n='';}else ui(n,text);}if(cls)n.className=cls;return n;};
 const labels={windows:'Windows',darwin:'macOS',linux:'Linux',amd64:'x64',arm64:'ARM64'},kinds={packages:'软件包',images:'镜像',drivers:'驱动',runtime:'运行时'};const names={'startup.inspect':'开机启动项','system.inspect':'系统体检','processes.inspect':'进程内存','network.diagnose':'网络诊断','network.inspect':'网卡信息','drivers.inspect':'网络设备与驱动','tools.catalog':'电脑维护工具包','tools.launch':'系统工具启动','resources.scan':'盘内资源','tools.install':'便携工具安装','report.create':'保存体检报告','reports.list':'历史报告'};
 if(isMac)names['drivers.inspect']='网络接口';
-let session=null,wallet=null,busy=false,expert=false;
+let session=null,wallet=null,busy=false,expert=false,activeAbort=null;
 let workspaces=[],activeWorkspace='',sessionRows=[],directoryRequest=0;
 const runtimeInfo={pico:null,cache:null};
 const gib=n=>Number.isFinite(n)?`${(n/1073741824).toFixed(1)} GB`:t('未获得'),bytes=n=>n>=1073741824?gib(n):`${(n/1048576).toFixed(1)} MB`;
 function toast(t){ui($('toast'),t);$('toast').classList.remove('hidden');setTimeout(()=>$('toast').classList.add('hidden'),4200);}
-async function run(action,input={}){const resp=await fetch('/api/run',{method:'POST',headers:{'Content-Type':'application/json','X-Xiapan-Token':token},body:JSON.stringify({action,input:{...input,locale:I18n.language}})});if(!resp.ok)throw Error(t('请求未完成 ({status})',{status:resp.status}));const r=await resp.json();if(!r.ok)throw Error(t(r.error||'操作未完成'));return r.data;}
+async function run(action,input={},signal){const opts={method:'POST',headers:{'Content-Type':'application/json','X-Xiapan-Token':token},body:JSON.stringify({action,input:{...input,locale:I18n.language}})};if(signal)opts.signal=signal;const resp=await fetch('/api/run',opts);if(!resp.ok)throw Error(t('请求未完成 ({status})',{status:resp.status}));const r=await resp.json();if(!r.ok)throw Error(t(r.error||'操作未完成'));return r.data;}
 function dialog(title,note){const c=$('dialog-content');c.replaceChildren(el('div','XIAPAN / MAINTENANCE','eyebrow'),el('h2',title));if(note)c.append(el('p',note));if(!$('dialog').open)$('dialog').showModal();return c;}
 function fail(e){toast(e.message||String(e));}
 function button(text,action,fn,cls='primary'){const b=el('button',text,cls);if(action)b.dataset.actionId=action;b.onclick=async()=>{b.disabled=true;try{await fn();}catch(e){fail(e);}finally{b.disabled=false;}};return b;}
@@ -38,7 +38,7 @@ function render(){if(!session)return;if(session.messages.length){$('task-title')
  }
  const trace=$('trace-content');trace.replaceChildren();for(const m of traces){const c=el('details',undefined,'trace-item');c.append(el('summary',m.action),el('pre',JSON.stringify(m.data,null,2)));trace.append(c);}ui($('trace-count'),'{count} 项动作',{count:traces.length});box.lastElementChild?.scrollIntoView({block:'nearest'});
 }
-function setBusy(value,text='● 正在处理当前任务…'){busy=value;$('send').disabled=value;$('workspace-add').disabled=value;$('file-reference').disabled=value;$('file-upload').disabled=value;$('new-chat').disabled=value;$('question').disabled=value;$('engine-select').disabled=value;$('busy-status').classList.toggle('hidden',!value);ui($('busy-status'),text);$('language-select').disabled=value;for(const b of document.querySelectorAll('.proposal-card button'))b.disabled=value;}
+function setBusy(value,text='● 正在处理当前任务…'){busy=value;$('workspace-add').disabled=value;$('file-reference').disabled=value;$('file-upload').disabled=value;$('new-chat').disabled=value;$('question').disabled=value;$('engine-select').disabled=value;$('busy-status').classList.toggle('hidden',!value);ui($('busy-status'),text);$('language-select').disabled=value;for(const b of document.querySelectorAll('.proposal-card button'))b.disabled=value;const send=$('send');send.disabled=false;ui(send,value?'停止':'发送 ↑');}
 function workspaceLabel(){const w=workspaces.find(w=>w.id===activeWorkspace);$('workspace-title').textContent=w?w.title:'';}
 async function listSessions(){
  const rows=await run('chat.list');sessionRows=rows;const c=$('session-list');c.replaceChildren();
@@ -87,10 +87,11 @@ async function uploadPastedImage(blob){
   try{const saved=await uploadFileToProject(blob,pasteImageName(blob.type));insertQuestionContext(t('粘贴图片：{path}',{path:saved.path}));toast(msg('已上传：{name}',{name:saved.name}));}
   catch(e){fail(e);}finally{setBusy(false);}
 }
-async function send(message){if(busy||!message.trim())return;if(!session)await newChat();if(busy)return;showView('chat');setBusy(true,'● 正在检测与回答…');
+function stopSend(){if(activeAbort)activeAbort.abort();}
+async function send(message){if(busy||!message.trim())return;if(!session)await newChat();if(busy)return;showView('chat');activeAbort=new AbortController();const signal=activeAbort.signal;setBusy(true,'● 正在检测与回答…');
  const progressTimer=setInterval(async()=>{try{const p=await run('chat.progress',{session_id:session.id});if(p){const saved=session;session=p;render();session=saved;}}catch{}},800);
  const local=el('article',undefined,'message user');local.append(el('div','你','message-label'),el('div',message,'message-text',true));$('messages').append(local);$('welcome').classList.add('hidden');local.scrollIntoView({block:'nearest'});$('question').value='';
- try{session=await run('chat.send',{session_id:session.id,expected_version:session.version,message,engine:$('engine-select').value,model:modelSettings?.model||''});render();await listSessions();}catch(e){fail(e);try{session=await run('chat.read',{session_id:session.id});render();}catch{} }finally{clearInterval(progressTimer);setBusy(false);$('question').focus();refreshRuntimeInfo().catch(()=>{});}
+ try{session=await run('chat.send',{session_id:session.id,expected_version:session.version,message,engine:$('engine-select').value,model:modelSettings?.model||''},signal);render();await listSessions();}catch(e){if(e.name==='AbortError'){toast('已停止当前回答，可重新发送或另开新对话');}else{fail(e);try{session=await run('chat.read',{session_id:session.id});render();}catch{}} }finally{clearInterval(progressTimer);activeAbort=null;setBusy(false);$('question').focus();refreshRuntimeInfo().catch(()=>{});}
 }
 async function confirm(proposalID){if(busy)return;setBusy(true,'● 正在执行已确认的操作并验证…');try{session=await run('chat.confirm',{session_id:session.id,expected_version:session.version,proposal_id:proposalID,confirmed:true});render();}finally{setBusy(false);}}
 function engineNote(){const value=$('engine-select').value;ui($('engine-note'),value==='pico'?msg('{model} · {source} · 设置与对话随盘保存',{model:modelSettings?.model||t('选择模型'),source:t(modelSettings?.source==='custom'?'自带 API':'虾盘云')}):'本地工具 · 无需模型');}
@@ -159,7 +160,7 @@ function showView(view){closeSidebarOnNarrow();for(const n of document.querySele
 const commands=[['/启动项','开机自启清单与状态'],['/体检','系统与内存、磁盘'],['/进程','进程工作集内存'],['/网络','网卡、DNS、云端 HTTPS'],['/驱动',isMac?'网络接口与盘内资源':'硬件 ID、故障码、盘内驱动'],['/工具','可打开的系统工具与资源集合'],['/资源','盘内软件、镜像与驱动'],['/安装','便携体检工具 · 确认后安装'],['/报告','新的体检报告 · 确认后保存'],['/救援','无法启动时的准备方案']].filter(([cmd])=>!isMac||cmd!=='/启动项');
 for(const [cmd,description] of commands){const b=el('button',undefined,'palette-command');b.append(el('code',t(cmd)),el('span',description));b.onclick=()=>{$('palette').close();send(cmd).catch(fail);};$('palette-commands').append(b);}
 document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.view)showView(b.dataset.view);if(b.dataset.prompt){showView('chat');$('maintenance-menu').open=false;$('question').value=t(b.dataset.prompt);$('question').focus();}if(b.dataset.command)send(b.dataset.command).catch(fail);});
-$('chat-form').onsubmit=e=>{e.preventDefault();send($('question').value).catch(fail);};$('question').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();send($('question').value).catch(fail);}};
+$('chat-form').onsubmit=e=>{e.preventDefault();if(busy){stopSend();return;}send($('question').value).catch(fail);};$('question').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();send($('question').value).catch(fail);}};
 $('workspace-add').onclick=()=>workspacePicker().catch(fail);$('file-reference').onclick=()=>referenceFiles().catch(fail);
 $('file-upload').onclick=()=>{if(busy)return;if(!activeWorkspace){toast('请先选择项目');return;}$('file-upload-input').click();};
 $('file-upload-input').onchange=event=>{const file=event.target.files&&event.target.files[0];event.target.value='';if(file)uploadSelectedFile(file).catch(fail);};

@@ -65,6 +65,8 @@
   "选择云端模型": "Choose a cloud model",
   "从服务端读取模型…": "Loading models from the server…",
   "发送 ↑": "Send ↑",
+  "停止": "Stop",
+  "已停止当前回答，可重新发送或另开新对话": "Stopped. You can resend or start a new chat.",
   "Enter 发送 · Shift Enter 换行 · / 快捷命令": "Enter to send · Shift Enter for a new line · / for commands",
   "执行记录": "Execution trace",
   "当前电脑的真实动作结果。此面板不执行任意 shell。": "Real action results from this computer. This panel never runs arbitrary shell.",
