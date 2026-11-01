@@ -39,6 +39,7 @@ function render(){if(!session)return;if(session.messages.length){$('task-title')
  const trace=$('trace-content');trace.replaceChildren();for(const m of traces){const c=el('details',undefined,'trace-item');c.append(el('summary',m.action),el('pre',JSON.stringify(m.data,null,2)));trace.append(c);}ui($('trace-count'),'{count} 项动作',{count:traces.length});box.lastElementChild?.scrollIntoView({block:'nearest'});
 }
 function anyRunning(){return Object.keys(runningTurns).length>0;}
+function currentRunning(){return !!(session&&runningTurns[session.id]);}
 function updateComposerState(text='● 正在处理当前任务…'){const running=!!(session&&runningTurns[session.id]);$('question').disabled=running;$('file-reference').disabled=running;$('file-upload').disabled=running;$('engine-select').disabled=running;$('busy-status').classList.toggle('hidden',!running);ui($('busy-status'),text);for(const b of document.querySelectorAll('.proposal-card button'))b.disabled=running;const send=$('send');send.disabled=false;ui(send,running?'停止':'发送 ↑');}
 function workspaceLabel(){const w=workspaces.find(w=>w.id===activeWorkspace);$('workspace-title').textContent=w?w.title:'';}
 async function listSessions(){
@@ -75,14 +76,14 @@ async function uploadFileToProject(file,name){
   return result;
 }
 async function uploadSelectedFile(file){
-  if(!activeWorkspace){toast('请先选择项目');return;}
-  if(anyRunning()||!file)return;
+  if(!activeWorkspace){toast('请先选择项目文件夹');workspacePicker().catch(fail);return;}
+  if(currentRunning()||!file)return;
   try{const saved=await uploadFileToProject(file);insertQuestionContext(t('上传文件：{path}',{path:saved.path}));toast(msg('已上传：{name}',{name:saved.name}));}
   catch(e){fail(e);}
 }
 async function uploadPastedImage(blob){
-  if(!activeWorkspace){toast('请先选择项目');return;}
-  if(anyRunning()||!blob)return;
+  if(!activeWorkspace){toast('请先选择项目文件夹，图片才能保存进去');workspacePicker().catch(fail);return;}
+  if(currentRunning()||!blob)return;
   try{const saved=await uploadFileToProject(blob,pasteImageName(blob.type));insertQuestionContext(t('粘贴图片：{path}',{path:saved.path}));toast(msg('已上传：{name}',{name:saved.name}));}
   catch(e){fail(e);}
 }
@@ -162,10 +163,10 @@ for(const [cmd,description] of commands){const b=el('button',undefined,'palette-
 document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.view)showView(b.dataset.view);if(b.dataset.prompt){showView('chat');$('maintenance-menu').open=false;$('question').value=t(b.dataset.prompt);$('question').focus();}if(b.dataset.command)send(b.dataset.command).catch(fail);});
 $('chat-form').onsubmit=e=>{e.preventDefault();if(session&&runningTurns[session.id]){stopSend();return;}send($('question').value).catch(fail);};$('question').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();send($('question').value).catch(fail);}};
 $('workspace-add').onclick=()=>workspacePicker().catch(fail);$('file-reference').onclick=()=>referenceFiles().catch(fail);
-$('file-upload').onclick=()=>{if(anyRunning())return;if(!activeWorkspace){toast('请先选择项目');return;}$('file-upload-input').click();};
+$('file-upload').onclick=()=>{if(currentRunning())return;if(!activeWorkspace){toast('请先选择项目文件夹');workspacePicker().catch(fail);return;}$('file-upload-input').click();};
 $('file-upload-input').onchange=event=>{const file=event.target.files&&event.target.files[0];event.target.value='';if(file)uploadSelectedFile(file).catch(fail);};
 $('question').addEventListener('paste',event=>{
-  if(anyRunning())return;
+  if(currentRunning())return;
   const data=event.clipboardData;if(!data||!data.items)return;
   const item=Array.from(data.items).find(entry=>entry.kind==='file'&&/^image\//.test(entry.type||''));
   if(!item)return;

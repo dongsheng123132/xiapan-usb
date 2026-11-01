@@ -572,6 +572,8 @@
   "＋ 上传文件": "＋ Upload file",
   "上传文件": "Upload file",
   "请先选择项目": "Select a project first",
+  "请先选择项目文件夹": "Choose a project folder first",
+  "请先选择项目文件夹，图片才能保存进去": "Choose a project folder first so the image can be saved",
   "● 正在上传文件…": "● Uploading file…",
   "● 正在上传图片…": "● Uploading image…",
   "上传文件：{path}": "Uploaded file: {path}",
