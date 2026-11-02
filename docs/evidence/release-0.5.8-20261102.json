@@ -94,13 +94,40 @@
       "detail": "本机无 Linux 环境"
     },
     "virustotal": {
-      "result": "not-run",
-      "detail": "无 API key"
+      "result": "blocked",
+      "detail": "本机无 VirusTotal API key；需要用户申请免费 key 或用网页手动提交"
+    },
+    "origin_page_500_concurrent50": {
+      "result": "pass",
+      "detail": "localhost https，500/500 返回 200，3.95 s"
+    },
+    "origin_download_50_concurrent": {
+      "result": "pass",
+      "detail": "localhost https，50 并发整包 5.14 s，约 1.4 GB，哈希一致"
+    },
+    "origin_download_200_concurrent": {
+      "result": "pass",
+      "detail": "localhost https，200 并发整包 24.55 s，约 5.6 GB，哈希一致"
+    },
+    "origin_sustained_3min_concurrent100": {
+      "result": "pass",
+      "detail": "3 分钟持续压测：30 轮 × 100 并发 = 3000 次整包请求，3000/3000 返回 200，0 失败"
     }
   },
   "known_limits": [
-    "macOS 包 adhoc 签名、未公证（spctl rejected），站点不提供 mac 下载卡",
-    "整盘母盘/随盘工具链仍为 0.5.5（本次决定不再制作 3 GB 级母盘）",
-    "发布通道为单人单机（Mac 私钥 + deploy.sh），无第二发布人"
-  ]
+    "macOS 包 adhoc 签名、未公证（spctl rejected）；按用户决定不做签名，站点不提供 mac 下载卡",
+    "整盘母盘/随盘工具链仍为 0.5.5（决定不再制作 3 GB 级母盘）",
+    "VirusTotal 未扫（缺 API key）",
+    "本机上行 ~7 MB/s，端到端并发受客户端带宽限制；源站能力由 localhost 压测独立验证"
+  ],
+  "release_channel": {
+    "primary": "Mac .cache/xiapan-usb-site（deploy.sh + ed25519 主钥匙）",
+    "backup_key": "gz_deploy_backup（2026-11-02 生成，公钥已装服务器，authorized_keys 现 4 行）",
+    "off_machine_copy": "私有仓 dongsheng123132/xiapan-site-ops（页面/元数据/脚本/证据，不含任何私钥）",
+    "recovery": [
+      "备份钥匙直接发布",
+      "pc-3116 第 11 个私钥登录后追加新公钥",
+      "腾讯云控制台 VNC 兜底"
+    ]
+  }
 }
