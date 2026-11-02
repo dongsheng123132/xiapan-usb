@@ -48,7 +48,7 @@
 准备 **Git 与 Go 1.24+**。Windows、Mac、Linux 都从同一个仓库开发：
 
 ```sh
-git clone --branch codex/u-picoclaw-portable https://github.com/dongsheng123132/xiapan-usb.git
+git clone https://github.com/dongsheng123132/xiapan-usb.git
 cd xiapan-usb
 go test ./...
 go build -o dist/xiapan .
