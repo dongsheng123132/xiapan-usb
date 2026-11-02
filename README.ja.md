@@ -37,7 +37,7 @@
 **Git と Go 1.24 以降**を用意してください。各 OS で同じリポジトリを使用します。
 
 ```sh
-git clone --branch codex/u-picoclaw-portable https://github.com/dongsheng123132/xiapan-usb.git
+git clone https://github.com/dongsheng123132/xiapan-usb.git
 cd xiapan-usb
 go test ./...
 go build -o dist/xiapan .

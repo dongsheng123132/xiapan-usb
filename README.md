@@ -48,7 +48,7 @@ The navigation sidebar is visible by default, with a toggle to collapse it into 
 Install **Git and Go 1.24+**, then build the core from the same repository on Windows, macOS or Linux:
 
 ```sh
-git clone --branch codex/u-picoclaw-portable https://github.com/dongsheng123132/xiapan-usb.git
+git clone https://github.com/dongsheng123132/xiapan-usb.git
 cd xiapan-usb
 go test ./...
 go build -o dist/xiapan .
