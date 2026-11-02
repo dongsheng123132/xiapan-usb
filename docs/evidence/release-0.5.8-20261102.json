@@ -120,6 +120,10 @@
     "universal_extract_tools": {
       "result": "pass",
       "detail": "unzip 与 bsdtar 解压均保留 .command/app/bin 的 755 可执行位（ditto 不保留，README 已备 chmod 兜底）"
+    },
+    "ci_windows_launcher": {
+      "result": "pass",
+      "detail": "GitHub Actions windows-latest：下载通用包 57,166,090 B（sha c49896a7 一致），Expand-Archive 后运行 开始使用-Windows.cmd → 虾盘 进程存活，监听 62217，HTTP 200/9144 B；直接运行 虾盘.exe version=0.5.8-portable-preview；对照组（UTF-8 无 BOM+LF）也成功；runner Defender realtime=False"
     }
   },
   "known_limits": [
@@ -221,11 +225,15 @@
     "zip_notes": "make-release-zip.py 生成，/ 分隔、UTF-8、create_system=3（保留可执行位）",
     "revision": "2026-11-02 18:18 修复 Windows 启动器编码（UTF-8 BOM + CRLF），修复前双击无反应",
     "launcher_fix": {
-      "symptom": "Windows 上双击 开始使用-Windows.cmd 无反应",
+      "symptom": "Windows 上双击 开始使用-Windows.cmd 无反应（用户复现）",
       "cause": "启动器在 Mac 上生成，UTF-8 无 BOM + LF；cmd.exe 在 GBK 代码页下解析中文文件名失败，start 静默失败",
       "fix": "改为 UTF-8 BOM + CRLF，并加 cd /d %~dp0、文件存在性检查与 pause 错误提示",
       "verified": "线上 zip 内 .cmd 为 BOM+CRLF（12 行），大小为 274 B",
-      "quick_fix": "https://usb.u-claw.org.cn/download/windows-launcher-fixed.cmd（覆盖 U 盘根目录同名文件；或直接双击 虾盘.exe）"
+      "quick_fix": "https://usb.u-claw.org.cn/download/windows-launcher-fixed.cmd（覆盖 U 盘根目录同名文件；或直接双击 虾盘.exe）",
+      "hypothesis": "启动器为 Mac 生成（UTF-8 无 BOM + LF）导致 cmd 解析中文失败",
+      "verification": "GitHub Actions windows-latest 实测：修复版（BOM+CRLF）app_running=True、HTTP 200；对照组（无 BOM+LF）同样 app_running=True —— 编码不是根因",
+      "status": "untested-on-user-machine；编码已统一为 BOM+CRLF（与 Windows 构建一致），但需在用户机器上定位真正原因",
+      "next": "在用户机上看 Defender 是否隔离 虾盘.exe；确认用户双击的是 .cmd 还是 .command；拿到 agent 通道后远程查"
     }
   },
   "signing_policy": {
