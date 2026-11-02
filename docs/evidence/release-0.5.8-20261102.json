@@ -124,6 +124,14 @@
     "ci_windows_launcher": {
       "result": "pass",
       "detail": "GitHub Actions windows-latest：下载通用包 57,166,090 B（sha c49896a7 一致），Expand-Archive 后运行 开始使用-Windows.cmd → 虾盘 进程存活，监听 62217，HTTP 200/9144 B；直接运行 虾盘.exe version=0.5.8-portable-preview；对照组（UTF-8 无 BOM+LF）也成功；runner Defender realtime=False"
+    },
+    "real_machine_pc3116_usb": {
+      "machine": "pc-3116 zjzhfs（Windows 11 家庭版 22631，Defender 实时防护开、防篡改开、SAC=0）",
+      "usb": "E: Xiapan（exFAT 56,469 MB）",
+      "before": "U 盘上的 开始使用-Windows.cmd 还是 53 B 旧版（UTF-8 无 BOM + LF）→ 双击后 虾盘 进程未启动（app_running=False）",
+      "after": "替换为 274 B（BOM+CRLF，含 cd /d、存在性检查、pause）后： 根目录启动器 → 进程存活，监听 60381，HTTP 200/9144 B； 发布-0.5.8-通用-2026-11-02 启动器 → 进程存活，监听 64743，HTTP 200； 直接运行 虾盘.exe → 进程存活，监听 63475，HTTP 200； 虾盘.exe version → exit=0, 0.5.8-portable-preview",
+      "defender": "无 虾盘.exe 相关检测；保护历史里只有旧的 Clash dmg PUA 记录（与本产品无关）；exe 未被隔离",
+      "conclusion": "根因是 U 盘上残留的旧版启动器文件；不是 Defender、不是包内容"
     }
   },
   "known_limits": [
