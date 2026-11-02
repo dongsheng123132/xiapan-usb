@@ -115,7 +115,7 @@
     },
     "universal_macos_launch_from_usb": {
       "result": "pass",
-      "detail": "直接从 /Volumes/Xiapan 运行 开始使用-Mac.command：服务启动、首页 200、二进制 version=0.5.8-portable-preview"
+      "detail": "直接从 /Volumes/Xiapan 运行 开始使用-Mac.command：服务启动、首页 200、version=0.5.8-portable-preview（Mac 侧不受本次 Windows 启动器修复影响）"
     },
     "universal_extract_tools": {
       "result": "pass",
@@ -200,8 +200,8 @@
   },
   "universal_artifact": {
     "url": "https://usb.u-claw.org.cn/download/xiapan-usb-0.5.8-universal.zip",
-    "size": 57165758,
-    "sha256": "c934922c4460cf2e6e207d6d9bc8c79ad3c1682cc5a471dba9c80874ee05ce88",
+    "size": 57166090,
+    "sha256": "c49896a7b0c626b6f3e946be854b88464956d158b69145de1b618198cf6aaaef",
     "entries": 29,
     "layout": {
       "root_entries": [
@@ -218,7 +218,15 @@
       },
       "shared": "data/（设置、对话、钱包、工作文件），app/catalog/、app/licenses/"
     },
-    "zip_notes": "make-release-zip.py 生成，/ 分隔、UTF-8、create_system=3（保留可执行位）"
+    "zip_notes": "make-release-zip.py 生成，/ 分隔、UTF-8、create_system=3（保留可执行位）",
+    "revision": "2026-11-02 18:18 修复 Windows 启动器编码（UTF-8 BOM + CRLF），修复前双击无反应",
+    "launcher_fix": {
+      "symptom": "Windows 上双击 开始使用-Windows.cmd 无反应",
+      "cause": "启动器在 Mac 上生成，UTF-8 无 BOM + LF；cmd.exe 在 GBK 代码页下解析中文文件名失败，start 静默失败",
+      "fix": "改为 UTF-8 BOM + CRLF，并加 cd /d %~dp0、文件存在性检查与 pause 错误提示",
+      "verified": "线上 zip 内 .cmd 为 BOM+CRLF（12 行），大小为 274 B",
+      "quick_fix": "https://usb.u-claw.org.cn/download/windows-launcher-fixed.cmd（覆盖 U 盘根目录同名文件；或直接双击 虾盘.exe）"
+    }
   },
   "signing_policy": {
     "decision": "不做任何收费签名（macOS 公证、Windows Authenticode 都不做）",
