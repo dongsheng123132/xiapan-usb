@@ -53,6 +53,8 @@ data/                    ← 两个平台共用：设置、对话、钱包、盘
 
 已知限制：仅 Apple Silicon；未公证状态在 Apple 收紧 Gatekeeper 后可能失效，届时需要重新放行或自行签名。
 
+其他已知边界：Linux 不在通用包内（无对应 PicoClaw 构建与实机验收，可自行从源码构建）；macOS 会在盘上生成 `._*` / `.DS_Store`，Windows 端看到属正常现象；同一块 exFAT 盘没有文件锁，不要在两台机器上同时使用。
+
 ### Windows（可能被杀软误报）
 
 exe 没有做 Windows 代码签名。Microsoft Defender 可能报 `Trojan:Win32/Wacatac.C!ml`——这是机器学习误报（VirusTotal 75 个引擎中仅 1 家报毒）。处理方式：**更多信息 → 仍要运行**。企业环境若无法放行，请自行签名后再分发。

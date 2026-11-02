@@ -48,6 +48,8 @@ This project ships **no paid code signing or notarization**, so macOS treats it 
 
 Known limits: Apple Silicon only; the unnotarized build may break when Apple tightens Gatekeeper — re-approve or sign it yourself.
 
+Other limits: Linux is not in the universal package (no PicoClaw build or hardware validation; build from source instead). macOS leaves `._*` / `.DS_Store` files on the drive, which is normal on Windows. There is no file locking on exFAT — do not use the same drive on two machines at once.
+
 ### Windows (possible antivirus false positive)
 
 The exe has no Windows code signature. Microsoft Defender may report `Trojan:Win32/Wacatac.C!ml`, a machine-learning false positive (1 of 75 VirusTotal engines). Choose **More info → Run anyway**. In locked-down enterprises, sign the binary before distributing.
