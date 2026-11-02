@@ -17,3 +17,5 @@
 - 发版流程：改页面 → `bash deploy.sh --dry-run` → `bash deploy.sh`（脚本自带备份、`nginx -t`、线上验收与回滚命令）。
 - Windows 原件：`C:\1new-code\虾盘-ai优盘精灵版u盘版本\gosim-2026\site\`；在线发布后要回推这两个页面，否则两边会漂。
 - 发页面前后都要核对「版本号 / 体积 / SHA-256」在页面里的 12 处是否一致，并用线上 zip 的实际 Content-Length 与本地 `shasum` 对比。
+- 异机备份：私有仓 `xiapan-site-ops`（页面/元数据/`deploy.sh`/证据/`KEYS.md`，**不含私钥**）；发布钥匙丢了走 `KEYS.md` 的三条恢复路径（备份钥匙 → pc-3116 恢复钥匙 → 腾讯云控制台）。
+- 站点元数据 `version.json` / `robots.txt` / `sitemap.xml` 随页面一起发布，改版本号时三处同步（页面下载卡、`payload/*.sha256`、`meta/version.json`）。
