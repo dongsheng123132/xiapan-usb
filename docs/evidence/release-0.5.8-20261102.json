@@ -129,5 +129,63 @@
       "pc-3116 第 11 个私钥登录后追加新公钥",
       "腾讯云控制台 VNC 兜底"
     ]
+  },
+  "virustotal": {
+    "scanned_at": "2026-11-02T17:00+08:00",
+    "zip": {
+      "sha256": "a3b27987fde8fe8026661227b0c161e7097d7cccaaa6e1d3dbb18abff9615166",
+      "stats": {
+        "malicious": 1,
+        "undetected": 57,
+        "timeout": 9,
+        "type_unsupported": 7,
+        "failure": 1
+      },
+      "flagged": [
+        {
+          "engine": "Bkav",
+          "result": "W32.AIDetect.malware"
+        }
+      ]
+    },
+    "main_exe": {
+      "sha256": "a4cc9a374b9f202961f76ee004bed416d030fe5398a1658e624929c189cd2c0c",
+      "stats": {
+        "malicious": 2,
+        "undetected": 67,
+        "type_unsupported": 4,
+        "failure": 2
+      },
+      "flagged": [
+        {
+          "engine": "Bkav",
+          "result": "W32.AIDetect.malware"
+        },
+        {
+          "engine": "Microsoft",
+          "result": "Trojan:Win32/Wacatac.C!ml",
+          "note": "机器学习误报；Microsoft Defender 正是客户机上最可能拦截的一家"
+        }
+      ]
+    },
+    "verdict": "低于「误报 ≤2 家」门槛，但 Microsoft Defender 的 Wacatac.C!ml 是真实分发风险，需要提误报 + Windows 代码签名"
+  },
+  "usb_build": {
+    "built_at": "2026-11-02T17:12+08:00",
+    "volume": "/Volumes/Xiapan（exFAT 59.2 GB）",
+    "root_updated": {
+      "虾盘.exe": "a4cc9a37…（release 构建；旧构建已备份到 _旧包-20261101/虾盘.exe-旧构建-20261101-1449）",
+      "app/runtime/picoclaw/windows-x64/picoclaw.exe": "ff59c3dc…",
+      "app/runtime/picoclaw/windows-x64/picoclaw-launcher.exe": "5b3aeee2…"
+    },
+    "clean_test_dir": "/Volumes/Xiapan/发布-0.5.8-2026-11-02/（整包解压，独立 data/）",
+    "zip_on_stick": {
+      "name": "虾盘-u-claw-lite-0.5.8-windows-x64.zip",
+      "sha256": "a3b27987…",
+      "bytes": 29876037
+    },
+    "old_zip_archived": "/Volumes/Xiapan/_旧包-20261101/",
+    "marker_file": "/Volumes/Xiapan/版本-日期.txt（构建时间 2026-11-02 17:12 + 版本 + SHA-256 + 打开步骤 + Defender 误报说明）",
+    "user_data_untouched": "data/ 9.9 MB、U-Claw/、u-dsh/、u-dsh-wallet/ 均未改动"
   }
 }
