@@ -18,6 +18,40 @@
 > [!NOTE]
 > **Preview release.** The package recipe includes Windows x64 and macOS Apple Silicon / Intel binaries. Apple Silicon has passed ExFAT USB startup, native file tools, credential restart and exit acceptance. Intel and first Finder trust remain unverified. Windows maintenance tools are not Mac tools. See [product scope](docs/PRODUCT.md) for the release boundary.
 
+## Download and install
+
+| Package | Platforms | Size | SHA-256 |
+| --- | --- | --- | --- |
+| Windows-only | Windows 10/11 x64 | 29.9 MB | `a3b27987fde8fe8026661227b0c161e7097d7cccaaa6e1d3dbb18abff9615166` |
+| Universal | Windows + Apple Silicon macOS | 57.2 MB | `c934922c4460cf2e6e207d6d9bc8c79ad3c1682cc5a471dba9c80874ee05ce88` |
+
+Download page: <https://usb.u-claw.org.cn/> · machine-readable version: <https://usb.u-claw.org.cn/version.json>
+
+The universal ZIP unpacks to **one folder with two entry points**:
+
+```
+开始使用-Windows.cmd     run this on Windows (or just 虾盘.exe)
+开始使用-Mac.command     run this on Apple Silicon macOS
+app/runtime/picoclaw/    windows-x64/ and darwin-arm64/ engines side by side
+data/                    shared by both platforms: settings, chats, wallet, work files
+```
+
+### macOS (unsigned, one-time approval)
+
+This project ships **no paid code signing or notarization**, so macOS treats it as an unsigned app:
+
+1. Run once in Terminal (only for that folder, never the whole drive or your home directory):
+   `xattr -dr com.apple.quarantine "/Volumes/<Drive>/<folder>"`
+2. Double-click `开始使用-Mac.command`; if macOS says it cannot verify the developer, right-click → Open → Open.
+3. If double-click does nothing, the executable bit was lost in extraction — `chmod +x` the `.command`.
+4. On first run the launcher verifies the binary and caches a copy under `~/Library/Caches/Xiapan/`; the drive keeps settings and data only.
+
+Known limits: Apple Silicon only; the unnotarized build may break when Apple tightens Gatekeeper — re-approve or sign it yourself.
+
+### Windows (possible antivirus false positive)
+
+The exe has no Windows code signature. Microsoft Defender may report `Trojan:Win32/Wacatac.C!ml`, a machine-learning false positive (1 of 75 VirusTotal engines). Choose **More info → Run anyway**. In locked-down enterprises, sign the binary before distributing.
+
 ## Your AI, on your drive
 
 Start in the existing lightweight interface. For longer tasks, skills, channels and detailed configuration, open **Full PicoClaw** from that same page. Both interfaces use the managed persistent Gateway; closing a browser page does not stop it. Use **Quit** before safely ejecting the drive.

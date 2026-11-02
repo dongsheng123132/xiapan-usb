@@ -70,6 +70,7 @@ def main() -> int:
                 entry = f"{args.prefix.strip('/')}/{rel}" if args.prefix else rel
                 check(entry)
                 info = zipfile.ZipInfo(entry, date_time=_mtime(path))
+                info.create_system = 3  # Unix，这样解压端才会还原可执行位
                 info.compress_type = zipfile.ZIP_DEFLATED
                 info.external_attr = (path.stat().st_mode & 0o777) << 16
                 with open(path, "rb") as src, zf.open(info, "w", force_zip64=True) as dst:

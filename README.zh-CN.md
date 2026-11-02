@@ -18,6 +18,45 @@
 > [!NOTE]
 > **当前为预览版。** 发行配方包含 Windows x64、Mac Apple Silicon 和 Mac Intel 三个平台的程序。Apple Silicon 已通过 ExFAT 实体盘的启动、文件工具、凭证重启和退出验收；Intel 与 Finder 首次信任仍待验证；Windows 工具不算 Mac 工具。产品范围以 [产品设计](docs/PRODUCT.md) 为准。
 
+## 下载与安装
+
+| 发行包 | 平台 | 体积 | SHA-256 |
+| --- | --- | --- | --- |
+| Windows 单平台包 | Windows 10/11 x64 | 29.9 MB | `a3b27987fde8fe8026661227b0c161e7097d7cccaaa6e1d3dbb18abff9615166` |
+| 通用包 | Windows + Apple Silicon macOS | 57.2 MB | `c934922c4460cf2e6e207d6d9bc8c79ad3c1682cc5a471dba9c80874ee05ce88` |
+
+下载入口：<https://usb.u-claw.org.cn/> · 版本信息：<https://usb.u-claw.org.cn/version.json>
+
+通用包解压后是**同一个文件夹、两个入口**：
+
+```
+开始使用-Windows.cmd     ← Windows 双击这个（或直接双击 虾盘.exe）
+开始使用-Mac.command     ← Apple Silicon Mac 双击这个
+app/runtime/picoclaw/    ← windows-x64/ 与 darwin-arm64/ 各放一份引擎
+data/                    ← 两个平台共用：设置、对话、钱包、盘内工作文件
+```
+
+### macOS（未签名，需手动放行一次）
+
+本项目**不做任何收费签名与公证**，macOS 会按未公证应用处理：
+
+1. 终端执行一次（只清这个目录，别对整块盘或用户主目录执行）：
+   ```bash
+   xattr -dr com.apple.quarantine "/Volumes/<盘名>/<解压目录>"
+   ```
+2. 双击 `开始使用-Mac.command`；若提示「无法验证开发者」，右键 → 打开 → 打开。
+3. 双击没反应说明可执行位丢了（部分解压工具会丢）：
+   ```bash
+   chmod +x "/Volumes/<盘名>/<解压目录>/开始使用-Mac.command"
+   ```
+4. 首次运行会校验主程序并把可执行副本放进 `~/Library/Caches/Xiapan/`，之后启动更快；U 盘只留配置与数据。
+
+已知限制：仅 Apple Silicon；未公证状态在 Apple 收紧 Gatekeeper 后可能失效，届时需要重新放行或自行签名。
+
+### Windows（可能被杀软误报）
+
+exe 没有做 Windows 代码签名。Microsoft Defender 可能报 `Trojan:Win32/Wacatac.C!ml`——这是机器学习误报（VirusTotal 75 个引擎中仅 1 家报毒）。处理方式：**更多信息 → 仍要运行**。企业环境若无法放行，请自行签名后再分发。
+
 ## 把 AI 和应急工具带在身边
 
 双击进入原有的轻量自建界面，需要长任务、技能、渠道或完整配置时，再点 **完整 PicoClaw**。两个入口使用同一个受管理的持久 Gateway。关闭网页不会停止 Gateway；完成后点 **退出**，再安全移除 U 盘。

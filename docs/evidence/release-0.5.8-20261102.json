@@ -112,13 +112,23 @@
     "origin_sustained_3min_concurrent100": {
       "result": "pass",
       "detail": "3 分钟持续压测：30 轮 × 100 并发 = 3000 次整包请求，3000/3000 返回 200，0 失败"
+    },
+    "universal_macos_launch_from_usb": {
+      "result": "pass",
+      "detail": "直接从 /Volumes/Xiapan 运行 开始使用-Mac.command：服务启动、首页 200、二进制 version=0.5.8-portable-preview"
+    },
+    "universal_extract_tools": {
+      "result": "pass",
+      "detail": "unzip 与 bsdtar 解压均保留 .command/app/bin 的 755 可执行位（ditto 不保留，README 已备 chmod 兜底）"
     }
   },
   "known_limits": [
-    "macOS 包 adhoc 签名、未公证（spctl rejected）；按用户决定不做签名，站点不提供 mac 下载卡",
+    "macOS 仅 Apple Silicon，且未签名未公证；按用户决定不做收费签名",
+    "Windows exe 未做 Authenticode，Defender 可能 ML 误报（已写入 README）",
     "整盘母盘/随盘工具链仍为 0.5.5（决定不再制作 3 GB 级母盘）",
-    "VirusTotal 未扫（缺 API key）",
-    "本机上行 ~7 MB/s，端到端并发受客户端带宽限制；源站能力由 localhost 压测独立验证"
+    "Linux 未纳入通用包（无对应 PicoClaw 构建与验收）",
+    "两平台共用 data/：同时在两台机器写同一块 exFAT 盘没有文件锁，README 提示不要并发使用",
+    "VirusTotal：zip 1/75、虾盘.exe 2/75（Bkav + Microsoft）；picoclaw.exe 分析未完成"
   ],
   "release_channel": {
     "primary": "Mac .cache/xiapan-usb-site（deploy.sh + ed25519 主钥匙）",
@@ -187,5 +197,32 @@
     "old_zip_archived": "/Volumes/Xiapan/_旧包-20261101/",
     "marker_file": "/Volumes/Xiapan/版本-日期.txt（构建时间 2026-11-02 17:12 + 版本 + SHA-256 + 打开步骤 + Defender 误报说明）",
     "user_data_untouched": "data/ 9.9 MB、U-Claw/、u-dsh/、u-dsh-wallet/ 均未改动"
+  },
+  "universal_artifact": {
+    "url": "https://usb.u-claw.org.cn/download/xiapan-usb-0.5.8-universal.zip",
+    "size": 57165758,
+    "sha256": "c934922c4460cf2e6e207d6d9bc8c79ad3c1682cc5a471dba9c80874ee05ce88",
+    "entries": 29,
+    "layout": {
+      "root_entries": [
+        "开始使用-Windows.cmd",
+        "开始使用-Mac.command",
+        "Start Windows.cmd",
+        "Start Mac.command",
+        "虾盘.exe"
+      ],
+      "app_bin": "macOS 主程序（bb1565790fa74b75f982ec2a19644063027223f124cf804232bd0cff01cd76bf）",
+      "runtime": {
+        "windows-x64": "picoclaw.exe ff59c3dc… + picoclaw-launcher.exe 5b3aeee2…",
+        "darwin-arm64": "picoclaw d3c21eee… + picoclaw-launcher 24b5816c…"
+      },
+      "shared": "data/（设置、对话、钱包、工作文件），app/catalog/、app/licenses/"
+    },
+    "zip_notes": "make-release-zip.py 生成，/ 分隔、UTF-8、create_system=3（保留可执行位）"
+  },
+  "signing_policy": {
+    "decision": "不做任何收费签名（macOS 公证、Windows Authenticode 都不做）",
+    "mitigation": "GitHub README（中/英）写清两条：macOS 未签名需 xattr/chmod 放行；Windows Defender 可能报 Trojan:Win32/Wacatac.C!ml 机器学习误报（VT 1/75），点「仍要运行」",
+    "risk": "Apple 收紧 Gatekeeper 后 mac 入口可能失效；企业环境可能禁止未签名 exe"
   }
 }
