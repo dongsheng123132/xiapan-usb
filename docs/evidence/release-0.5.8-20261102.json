@@ -1,0 +1,106 @@
+{
+  "generated_at": "2026-11-02T14:02:00+08:00",
+  "product": "虾盘 u-claw lite (U-PicoClaw)",
+  "version": "0.5.8-portable-preview",
+  "git": {
+    "commit": "7fe826c68dcb64f7e1795e658b1546afb54c03b4",
+    "tag": "v0.5.8-preview",
+    "repo": "https://github.com/dongsheng123132/xiapan-usb"
+  },
+  "release_artifact": {
+    "url": "https://usb.u-claw.org.cn/download/xiapan-usb-0.5.8-preview-windows-x64.zip",
+    "file": "xiapan-usb-0.5.8-preview-windows-x64.zip",
+    "size": 29876037,
+    "sha256": "a3b27987fde8fe8026661227b0c161e7097d7cccaaa6e1d3dbb18abff9615166",
+    "entries": 26,
+    "files": 23,
+    "path_separator": "/",
+    "filename_encoding": "utf-8",
+    "contents": {
+      "main_program": "虾盘.exe 13210624 B",
+      "engine": "app/runtime/picoclaw/windows-x64/picoclaw.exe 37601792 B",
+      "official_ui": "app/runtime/picoclaw/windows-x64/picoclaw-launcher.exe 24574464 B"
+    },
+    "note": "0.5.8 原包条目名带反斜杠 + GBK（旧版 Compress-Archive），macOS/Linux 无法解压；本包内容逐字节不变，仅改分隔符与文件名编码"
+  },
+  "site": {
+    "root": "/var/www/usb-uclaw (gz 203.195.204.252, nginx 1.24.0)",
+    "metadata": [
+      "/version.json",
+      "/robots.txt",
+      "/sitemap.xml"
+    ],
+    "analytics_injection": "nginx sub_filter 注入 stats.u-claw.org.cn（磁盘 38,979 B → HTTP 39,101 B）",
+    "backup_dirs": [
+      "backup-20261102-103323",
+      "backup-20261102-112418",
+      "backup-20261102-112618",
+      "backup-20261102-112809",
+      "backup-20261102-140031",
+      "backup-20261102-140100"
+    ]
+  },
+  "tests": {
+    "concurrency_download_10": {
+      "result": "pass",
+      "detail": "10/10 哈希一致"
+    },
+    "concurrency_download_30": {
+      "result": "pass",
+      "detail": "30/30 哈希一致，96.6 s"
+    },
+    "concurrency_download_60": {
+      "result": "pass",
+      "detail": "60/60 哈希一致，255.3 s（本机上行瓶颈）"
+    },
+    "concurrent_page_200": {
+      "result": "pass",
+      "detail": "200/200 返回 200，无 5xx"
+    },
+    "server_5xx_during_window": {
+      "result": "pass",
+      "detail": "13:45-14:05 usb vhost 0 个 5xx（仅他站 /v1/alpha/search 5 个）"
+    },
+    "range_resume": {
+      "result": "pass",
+      "detail": "首段 5,242,880 B 后两次 -C - 续传，最终 29,876,037 B 且 sha256 一致；Accept-Ranges: bytes，206"
+    },
+    "windows_download_extract": {
+      "result": "pass",
+      "detail": "Invoke-WebRequest 17.7 s，Expand-Archive 解出 23 文件，关键三项存在"
+    },
+    "windows_runtime": {
+      "result": "pass",
+      "detail": "version=0.5.8-portable-preview；system.inspect ok；tools.catalog ok"
+    },
+    "windows_serve_cycles": {
+      "result": "pass",
+      "detail": "10/10 启停后 / 返回 200；无 picoclaw 孤儿进程、无残留 虾盘 进程"
+    },
+    "macos_extract_ditto": {
+      "result": "pass",
+      "detail": "ditto -x -k 解 23/23，逐文件 sha256 与 zip 内一致"
+    },
+    "macos_extract_bsdtar": {
+      "result": "pass",
+      "detail": "libarchive 解 23/23（Finder Archive Utility 同引擎）"
+    },
+    "macos_extract_infozip_quirk": {
+      "result": "known-edge",
+      "detail": "Apple Info-ZIP 6.00 全量解压静默跳过 picoclaw.exe / picoclaw-launcher.exe（21/23），unzip -t 无错、按路径单独解可解；不影响 Finder，也不影响 Windows 用户"
+    },
+    "linux_extract": {
+      "result": "not-run",
+      "detail": "本机无 Linux 环境"
+    },
+    "virustotal": {
+      "result": "not-run",
+      "detail": "无 API key"
+    }
+  },
+  "known_limits": [
+    "macOS 包 adhoc 签名、未公证（spctl rejected），站点不提供 mac 下载卡",
+    "整盘母盘/随盘工具链仍为 0.5.5（本次决定不再制作 3 GB 级母盘）",
+    "发布通道为单人单机（Mac 私钥 + deploy.sh），无第二发布人"
+  ]
+}
