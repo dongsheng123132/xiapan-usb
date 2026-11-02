@@ -1,5 +1,22 @@
 # 更新日志
 
+## 0.5.8 发行修正 · 2026-11-02
+
+**跨平台解压修复（0.5.8 包本身没变，只修包）**
+
+- 问题：0.5.8 的 Windows zip 条目名带反斜杠（`虾盘-u-claw-lite-0.5.8-windows-x64\app\runtime\...`），Windows 资源管理器能解，macOS/Linux 的 unzip 报 `Illegal byte sequence`。来源是 Windows 侧旧版 `Compress-Archive` / 资源管理器压缩。
+- 修复：用新的 `scripts/make-release-zip.py` 重打包，条目分隔符统一 `/`、文件名 UTF-8；包内文件逐字节不变（26 个条目、29,876,037 B）。
+- 站点同步：下载包与 `.sha256` 一起替换，页面 SHA-256 更新为 `a3b27987fde8fe8026661227b0c161e7097d7cccaaa6e1d3dbb18abff9615166`。
+
+**发行形态（同日决定）**
+
+- 默认发布物 = 程序本体 zip（29.9 MB，含 PicoClaw 引擎与完整界面），**不再制作 3 GB 级整盘母盘**。
+- 第三方工具 / 驱动 / 离线模型改为按需下载，随包只留清单（见 `docs/DISTRIBUTION.md` 新增「发行包形态」）。
+
+**产品页定位**
+
+- `usb.u-claw.org.cn` 文案从「轻量维护预览版」改为「全功能随身 AI」：对话、项目与文件、图片与粘贴、作图配乐、电脑体检与维护同属一包；维护只是其中一项能力。
+
 ## 0.5.8-portable-preview · 2026-11-01
 
 回到「虾盘 lite 为主界面」的形态，并修掉多对话锁死。

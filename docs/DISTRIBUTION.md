@@ -41,3 +41,11 @@ PicoClaw 基线保持 v0.3.1；官方 launcher 一并锁定。客户盘不在启
 - https://www.gnu.org/licenses/gpl-faq.html
 - https://learn.microsoft.com/en-us/sysinternals/license-faq
 - https://github.com/sipeed/picoclaw/releases/tag/v0.3.1
+
+## 发行包形态（2026-11-02 用户决定）
+
+- **不再制作 3 GB 级「整盘母盘」作为默认发行物**。母盘体积来自第三方工具、驱动包和离线安装剂的合集；这些不是程序本体。
+- 对外发布的是**程序本体 zip**（Windows x64 当前 29.9 MB，含 PicoClaw 引擎与完整界面）。随包只放能开箱即用的必要二进制，保留双语说明、许可和工具清单。
+- 第三方工具、驱动、离线模型一律**按需下载**：`catalog/` 保存清单与来源，用户第一次用到时再取，不预装、不占包体。
+- 磁盘镜像级别的交付仍然可以按客户要求单独制作，但它不是默认发布物，也不进 Release。
+- 发行 zip 必须用 `scripts/make-release-zip.py` 生成：条目分隔符 `/`、文件名 UTF-8。Windows 旧版 `Compress-Archive` 会把分隔符写成反斜杠，导致 macOS/Linux 无法解压（2026-11-02 0.5.8 Windows 包踩过）。
