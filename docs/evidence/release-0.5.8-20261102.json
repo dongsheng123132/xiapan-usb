@@ -10,8 +10,8 @@
   "release_artifact": {
     "url": "https://usb.u-claw.org.cn/download/xiapan-usb-0.5.8-preview-windows-x64.zip",
     "file": "xiapan-usb-0.5.8-preview-windows-x64.zip",
-    "size": 29876037,
-    "sha256": "a3b27987fde8fe8026661227b0c161e7097d7cccaaa6e1d3dbb18abff9615166",
+    "size": 29876443,
+    "sha256": "cd8975b840382a09d3d95ce20e2faf5d94142eaec735f734ed1e1347be98d22e",
     "entries": 26,
     "files": 23,
     "path_separator": "/",
@@ -21,7 +21,7 @@
       "engine": "app/runtime/picoclaw/windows-x64/picoclaw.exe 37601792 B",
       "official_ui": "app/runtime/picoclaw/windows-x64/picoclaw-launcher.exe 24574464 B"
     },
-    "note": "0.5.8 原包条目名带反斜杠 + GBK（旧版 Compress-Archive），macOS/Linux 无法解压；本包内容逐字节不变，仅改分隔符与文件名编码"
+    "note": "0.5.8 原包条目名带反斜杠 + GBK（旧版 Compress-Archive），macOS/Linux 无法解压；本包内容逐字节不变，仅改分隔符与文件名编码；2026-11-02 21:08 起启动器换为 274 B（BOM+CRLF，带 cd /d、存在性检查、pause）"
   },
   "site": {
     "root": "/var/www/usb-uclaw (gz 203.195.204.252, nginx 1.24.0)",
@@ -132,6 +132,10 @@
       "after": "替换为 274 B（BOM+CRLF，含 cd /d、存在性检查、pause）后： 根目录启动器 → 进程存活，监听 60381，HTTP 200/9144 B； 发布-0.5.8-通用-2026-11-02 启动器 → 进程存活，监听 64743，HTTP 200； 直接运行 虾盘.exe → 进程存活，监听 63475，HTTP 200； 虾盘.exe version → exit=0, 0.5.8-portable-preview",
       "defender": "无 虾盘.exe 相关检测；保护历史里只有旧的 Clash dmg PUA 记录（与本产品无关）；exe 未被隔离",
       "conclusion": "根因是 U 盘上残留的旧版启动器文件；不是 Defender、不是包内容"
+    },
+    "published_windows_package_pc3116": {
+      "machine": "pc-3116 zjzhfs（Windows 11 家庭版 22631）",
+      "detail": "从 usb.u-claw.org.cn 下载 29,876,443 B，sha256 cd8975b8 一致；Expand-Archive 解出；开始使用.cmd（274 B、BOM=True）启动 → 虾盘 进程存活、监听 52162、HTTP 200/9144 B；虾盘.exe version → exit=0, 0.5.8-portable-preview"
     }
   },
   "known_limits": [
