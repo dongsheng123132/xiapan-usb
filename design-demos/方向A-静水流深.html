@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>方向 A · 静水流深 — 虾盘随身 AI</title>
+<style>
+  :root{
+    --bg:#F5F5F7; --bg2:#ECECF0; --surface:#FFFFFF;
+    --label:#1D1D1F; --label2:#6E6E73; --label3:#AEAEB2;
+    --sep:rgba(60,60,67,.12); --sep-strong:rgba(60,60,67,.2);
+    --accent:#0A84FF; --accent-soft:rgba(10,132,255,.12);
+    --green:#34C759; --red:#FF3B30; --orange:#FF9500;
+    --radius:12px; --shadow:0 1px 2px rgba(0,0,0,.04),0 8px 28px rgba(0,0,0,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    color:var(--label); background:var(--bg); font-size:17px; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{display:grid;grid-template-columns:248px 1fr;height:100vh;overflow:hidden}
+
+  /* ---------- 侧栏 ---------- */
+  .side{
+    background:rgba(245,245,247,.82); backdrop-filter:saturate(180%) blur(24px);
+    border-right:1px solid var(--sep); display:flex; flex-direction:column; padding:14px 12px;
+  }
+  .brand{display:flex;align-items:center;gap:10px;padding:8px 10px;margin-bottom:14px}
+  .brand-mark{width:34px;height:34px;border-radius:9px;background:var(--label);color:#fff;display:grid;place-items:center;font-size:17px;font-weight:600}
+  .brand-name{font-size:15px;font-weight:600;letter-spacing:.2px}
+  .brand-name small{display:block;font-size:11px;font-weight:400;color:var(--label2);margin-top:-1px}
+  .nav{display:flex;flex-direction:column;gap:2px}
+  .nav-item{display:flex;align-items:center;gap:12px;height:44px;padding:0 12px;border-radius:10px;
+    color:var(--label);text-decoration:none;font-size:15px;cursor:pointer;border:none;background:transparent;text-align:left}
+  .nav-item:hover{background:rgba(0,0,0,.04)}
+  .nav-item.active{background:rgba(0,0,0,.06);font-weight:600}
+  .nav-item svg{width:20px;height:20px;color:var(--label2);flex:none}
+  .nav-item.active svg{color:var(--accent)}
+  .nav-badge{margin-left:auto;font-size:11px;color:var(--label2);background:var(--bg2);padding:2px 8px;border-radius:99px}
+  .side-foot{margin-top:auto;display:flex;flex-direction:column;gap:2px}
+  .drive{display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:12px;color:var(--label2)}
+  .drive i{width:8px;height:8px;border-radius:50%;background:var(--green);flex:none}
+
+  /* ---------- 主区 ---------- */
+  .main{display:flex;flex-direction:column;min-width:0}
+  .topbar{height:56px;display:flex;align-items:center;gap:8px;padding:0 20px;border-bottom:1px solid var(--sep);background:rgba(245,245,247,.7);backdrop-filter:blur(24px)}
+  .crumb{font-size:13px;color:var(--label2)}
+  .crumb b{color:var(--label);font-weight:600;font-size:15px;margin-left:6px}
+  .top-actions{margin-left:auto;display:flex;align-items:center;gap:6px}
+  .tbtn{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:8px;border:1px solid transparent;
+    background:transparent;color:var(--label);font-size:13px;cursor:pointer}
+  .tbtn:hover{background:rgba(0,0,0,.05)}
+  .tbtn.ghost{border-color:var(--sep-strong)}
+  .content{flex:1;overflow-y:auto;display:flex;justify-content:center}
+  .col{width:100%;max-width:760px;padding:48px 28px 28px}
+
+  .hero h1{font-size:34px;font-weight:700;letter-spacing:-.02em;margin:6px 0 10px}
+  .hero p{font-size:17px;color:var(--label2);max-width:520px;margin:0 0 26px}
+  .seg{display:inline-flex;background:var(--bg2);border-radius:10px;padding:3px}
+  .seg button{border:none;background:transparent;height:34px;padding:0 16px;border-radius:8px;font-size:14px;color:var(--label2);cursor:pointer}
+  .seg button.active{background:#fff;color:var(--label);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+  /* 对话 */
+  .thread{margin-top:26px;display:flex;flex-direction:column;gap:18px}
+  .bubble{max-width:78%;padding:12px 16px;border-radius:18px;font-size:16px}
+  .bubble.user{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:6px}
+  .bubble.ai{align-self:flex-start;background:var(--surface);border:1px solid var(--sep);border-bottom-left-radius:6px;box-shadow:var(--shadow)}
+
+  /* 文件面板（切到“文件”时显示） */
+  .files{display:none;margin-top:26px}
+  .files.on{display:block}
+  .file-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .path{font-size:14px;color:var(--label2)}
+  .path b{color:var(--label)}
+  .file-list{background:var(--surface);border:1px solid var(--sep);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .frow{display:flex;align-items:center;gap:12px;height:48px;padding:0 16px;font-size:15px}
+  .frow + .frow{border-top:1px solid var(--sep)}
+  .frow svg{width:20px;height:20px;color:var(--label2)}
+  .frow .meta{margin-left:auto;font-size:13px;color:var(--label3)}
+
+  /* 输入区 */
+  .composer{padding:16px 28px 22px;border-top:1px solid var(--sep);background:rgba(245,245,247,.7);backdrop-filter:blur(24px)}
+  .box{max-width:760px;margin:0 auto;display:flex;align-items:flex-end;gap:10px;background:var(--surface);
+    border:1px solid var(--sep-strong);border-radius:22px;padding:10px 10px 10px 18px;box-shadow:var(--shadow)}
+  textarea{flex:1;border:none;outline:none;resize:none;background:transparent;font:inherit;font-size:16px;max-height:120px;padding:6px 0}
+  .send{width:40px;height:40px;border-radius:50%;border:none;background:var(--accent);color:#fff;display:grid;place-items:center;cursor:pointer;flex:none}
+  .hint{max-width:760px;margin:10px auto 0;font-size:12px;color:var(--label3);text-align:center}
+
+  .tag{position:fixed;right:16px;bottom:16px;font-size:12px;color:var(--label2);background:rgba(255,255,255,.9);
+    border:1px solid var(--sep);padding:6px 12px;border-radius:99px;backdrop-filter:blur(10px)}
+  @media (max-width:720px){ .side{display:none} .app{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><span class="brand-mark">虾</span><span class="brand-name">虾盘<small>随身 AI · Lite</small></span></div>
+    <nav class="nav">
+      <button class="nav-item active" data-view="chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6a1.5 1.5 0 0 1 1.5-1.5h13A1.5 1.5 0 0 1 20 6v9a1.5 1.5 0 0 1-1.5 1.5H10l-4 3.5v-3.5h-.5A1.5 1.5 0 0 1 4 15z"/></svg>AI 对话</button>
+      <button class="nav-item" data-view="files"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7A1.5 1.5 0 0 1 5 5.5h4l2 2.5h8A1.5 1.5 0 0 1 20.5 9v8A1.5 1.5 0 0 1 19 18.5H5A1.5 1.5 0 0 1 3.5 17z"/></svg>文件夹</button>
+      <button class="nav-item" data-view="tools"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a5 5 0 0 0-6.4 6.4L4 16.9 6.5 19.4l4.2-4.3a5 5 0 0 0 6.4-6.4L13.7 12 12 10.3z"/></svg>维护工具包</button>
+      <button class="nav-item" data-view="rescue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 2.5"/></svg>启动救援<span class="nav-badge">入口</span></button>
+    </nav>
+    <div class="side-foot">
+      <button class="nav-item" data-view="wallet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6.5" width="18" height="11" rx="2.4"/><path d="M3 10h18M15.5 13.5h1.6"/></svg>设备钱包</button>
+      <button class="nav-item" data-view="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.7a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.7a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.5a7 7 0 0 0 .1-1.2z"/></svg>模型设置</button>
+      <div class="drive"><i></i>设置随盘保存 · U盘安全移除</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <span class="crumb">虾盘 / <b id="crumb">新对话</b></span>
+      <div class="top-actions">
+        <button class="tbtn">语言</button>
+        <button class="tbtn">对话记录</button>
+        <button class="tbtn ghost">完整 PicoClaw</button>
+        <button class="tbtn">退出</button>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="col">
+        <div class="hero" id="hero">
+          <h1>你的随身 AI</h1>
+          <p>随身 AI、钱包随盘、程序缓存、断网应急，再加一套电脑维护工具包。换台电脑，接着干。</p>
+          <div class="seg">
+            <button class="active" data-mode="chat">对话</button>
+            <button data-mode="files">文件</button>
+          </div>
+        </div>
+
+        <div class="thread" id="thread">
+          <div class="bubble ai">这是你的便携工作区。想整理一份文件、查个电脑问题，还是接着上次没做完的活？</div>
+          <div class="bubble user">把上个月的会议纪要按日期排一下，存到「项目A」文件夹。</div>
+          <div class="bubble ai">已整理成 3 份，写进盘内「项目A」文件夹。点左侧「文件夹」可以查看。</div>
+        </div>
+
+        <div class="files" id="files">
+          <div class="file-head">
+            <span class="path">工作区 / <b>项目A</b></span>
+          </div>
+          <div class="file-list">
+            <div class="frow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 4h4l2 2h8a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/></svg>2026-09-会议纪要-整理.md<span class="meta">2.4 KB</span></div>
+            <div class="frow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 4h4l2 2h8a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/></svg>资料 /<span class="meta">目录</span></div>
+            <div class="frow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 4h9l3 3v13H6z"/></svg>报价单-v2.xlsx<span class="meta">18 KB</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="composer">
+      <div class="box">
+        <textarea id="q" rows="1" placeholder="想聊什么，或需要我帮什么忙？"></textarea>
+        <button class="send" title="发送"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+      </div>
+      <div class="hint">Enter 发送 · Shift Enter 换行 · 断网时左侧工具包照常可用</div>
+    </footer>
+  </main>
+</div>
+<div class="tag">方向 A · 静水流深（系统极简）· 视觉预览</div>
+
+<script>
+  const views={chat:['hero','thread'],files:['files'],tools:[],rescue:[],wallet:[],settings:[]};
+  document.querySelectorAll('.nav-item[data-view]').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+  }));
+  document.querySelectorAll('.seg button[data-mode]').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.seg button').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+    document.getElementById('files').classList.toggle('on', b.dataset.mode==='files');
+    document.getElementById('thread').style.display = b.dataset.mode==='chat'?'':'none';
+    document.getElementById('hero').style.display = b.dataset.mode==='chat'?'':'none';
+  }));
+</script>
+</body>
+</html>
